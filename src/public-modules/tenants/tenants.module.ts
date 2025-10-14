@@ -5,6 +5,7 @@ import { TenantEntity } from './entities/tenant.entity/tenant.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([TenantEntity])],
-  providers: [TenantsService]
+  providers: [TenantsService],
+  exports: [TenantsService]
 })
 export class TenantsModule {}
