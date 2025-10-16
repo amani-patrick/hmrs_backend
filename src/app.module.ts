@@ -1,72 +1,46 @@
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TenantsModule } from './public-modules/tenants/tenants.module';
-import { TenancyModule } from './tenancy/tenancy.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import configuration from './config/configuration';
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { TenancyMiddleware } from './tenancy/tenancy.middleware';
+
+import { TenantsModule } from './public-modules/tenants/tenants.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { DepartmentModule } from './modules/department/department.module';
 import { PositionModule } from './modules/position/position.module';
-import { DashboardController } from './admin/dashboard/dashboard.controller';
-import { AdminService } from './modules/admin/admin.service';
 import { RecruitmentModule } from './modules/recruitment/recruitment.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 import { LeaveModule } from './modules/leave/leave.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { CalendarModule } from './modules/calendar/calendar.module';
+import { MessagingModule } from './modules/messaging/messaging.module';
 
-
+import { TenancyModule } from './tenancy/tenancy.module';
+import { TenancyMiddleware } from './tenancy/tenancy.middleware';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-          isGlobal: true, 
-          load: [configuration],
+      isGlobal: true, 
+      load: [configuration],
     }),
-
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const dbConfig = config.get('database');
-        
-        return {
-          type: 'postgres',
-          host: dbConfig.host,
-          port: dbConfig.port,
-          username: dbConfig.username,
-          password: dbConfig.password,
-          database: dbConfig.name,
-
-          entities: [__dirname + '/public-modules/**/*.entity{.ts,.js}'], 
-          
-          schema: dbConfig.public_schema,
-          synchronize: process.env.NODE_ENV === 'development', 
-          autoLoadEntities: true,
-        };
-      },
-    }),
-
     TenantsModule,
-
     TenancyModule,
-
     UsersModule,
-
     AuthModule,
-
     DepartmentModule,
-
     PositionModule,
-
     RecruitmentModule,
-
     PayrollModule,
-
     LeaveModule,
+    SettingsModule,
+    CalendarModule,
+    MessagingModule,
   ],
-  controllers: [DashboardController],
-  providers: [AdminService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule  implements  NestModule{
   configure(consumer: MiddlewareConsumer){

@@ -231,7 +231,6 @@ export class RecruitmentService {
   }
 
   async getHiringPipeline(): Promise<HiringPipelineResponseDto> {
-    // Get all active job postings
     const activeJobs = await this.jobPostingRepository.find({
       where: { status: JobStatus.PUBLISHED },
       relations: ['candidates'],
@@ -254,7 +253,7 @@ export class RecruitmentService {
         return acc;
       }, {} as Record<string, number>);
 
-      // Calculate conversion rate (simplified)
+      // Calculate conversion rate [Simple version]
       const applied = statusCounts[CandidateStatus.NEW] || 0;
       const interviewed = statusCounts[CandidateStatus.INTERVIEW] || 0;
       const conversionRate = applied > 0 ? Math.round((interviewed / applied) * 100) : 0;
