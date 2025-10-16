@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { Role } from '../../../common/enums/roles.enum';
 import { Department } from '../../department/entities/department.entity';
 import { SalaryGrade } from '../../payroll/entities/salary-grade.entity';
+import { Position } from '../../position/entities/position.entity';
 
 @Entity({ name: 'users' }) 
 export class User {
@@ -34,6 +35,22 @@ export class User {
 
   @Column({ nullable: true })
   position: string | null;
+
+  @Column({ nullable: true })
+  phoneNumber: string | null;
+
+  @Column({ nullable: true })
+  location: string | null;
+
+  @Column({ nullable: true })
+  profilePictureUrl: string | null;
+
+  @ManyToOne(() => Position, { nullable: true })
+  @JoinColumn({ name: 'positionId' })
+  positionRef: Position | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  positionId: string | null;
 
   @Column({ nullable: true })
   tenantId: string | null;

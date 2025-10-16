@@ -1,21 +1,17 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { PositionService } from './position.service';
 import { PositionController } from './position.controller';
-import { TENANT_DATA_SOURCE } from '../../tenancy/tenancy.symbols';
+import { Position } from './entities/position.entity';
+import { DepartmentModule } from '../department/department.module';
 
 @Module({
-  controllers: [PositionController],
-  providers: [
-    {
-      provide:'POSITION_REPOSITORY',
-      useFactory: (tenant.DataSource: DataSource)=>{
-        if(!tenantDataSource) return null;
-        return tenantDataSource.getRepository(Position);
-      },
-      inject: [TENANT_DATA_SOURCE],
-    },
-    PositionService,
+  imports: [
+    TypeOrmModule.forFeature([Position]),
+    DepartmentModule,
   ],
-  exports:[ PositionService]
+  controllers: [PositionController],
+  providers: [PositionService],
+  exports: [PositionService]
 })
 export class PositionModule {}

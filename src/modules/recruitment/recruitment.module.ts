@@ -5,12 +5,13 @@ import { RecruitmentService } from './recruitment.service';
 import { RecruitmentController } from './recruitment.controller';
 import { JobPosting } from './entities/job-posting.entity';
 import { Candidate } from './entities/candidate.entity';
+import { Interview } from './entities/interview.entity';
 import { TENANT_DATA_SOURCE } from '../../tenancy/tenancy.symbols';
 import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobPosting, Candidate]),
+    TypeOrmModule.forFeature([JobPosting, Candidate, Interview]),
     forwardRef(() => UsersModule),
   ],
   controllers: [RecruitmentController],
@@ -32,6 +33,16 @@ import { UsersModule } from '../users/users.module';
           throw new Error('Accessing candidates without a valid Tenant Context');
         }
         return tenantDataSource.getRepository(Candidate);
+      },
+      inject: [TENANT_DATA_SOURCE],
+    },
+    {
+      provide: 'INTERVIEW_REPOSITORY',
+      useFactory: (tenantDataSource: DataSource) => {
+        if (!tenantDataSource) {
+          throw new Error('Accessing interviews without a valid Tenant Context');
+        }
+        return tenantDataSource.getRepository(Interview);
       },
       inject: [TENANT_DATA_SOURCE],
     },

@@ -1,5 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { Repository, MoreThanOrEqual } from 'typeorm';
+import { Inject, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Repository, MoreThanOrEqual, Like, In, Not, IsNull } from 'typeorm';
+import { Response } from 'express';
+import * as ExcelJS from 'exceljs';
+import { DirectoryFiltersDto } from './dto/directory-filters.dto';
+import { EmployeeDirectoryDto } from './dto/employee-directory.dto';
 import { plainToInstance } from 'class-transformer';
 import { User } from './entities/user.entity';
 import { CreateUserDto, CompleteSignupDto } from './dto/create-user.dto';
@@ -32,6 +36,90 @@ export class UsersService {
     // Send a unique signup link
     
     return this.userRepository.save(newUser);
+  }
+
+  async getEmployeeDirectory(filters: DirectoryFiltersDto): Promise<EmployeeDirectoryDto[]> {
+    const { departmentId, search, location } = filters;
+
+    const query = this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.department', 'department')
+      .leftJoinAndSelect('user.position', 'position')
+      .where('user.role != :adminRole', { adminRole: 'admin' })
+      .andWhere('user.isActive = :isActive', { isActive: true });
+
+    if (departmentId) {
+      query.andWhere('user.departmentId = :departmentId', { departmentId });
+    }
+
+    if (search) {
+      const searchTerm = `%${search.toLowerCase()}%`;
+      query.andWhere(
+        '(LOWER(user.firstName) LIKE :search OR ' +
+        'LOWER(user.lastName) LIKE :search OR ' +
+        'LOWER(user.email) LIKE :search OR ' +
+        'LOWER(position.title) LIKE :search)',
+        { search: searchTerm }
+      );
+    }
+
+    if (location) {
+      query.andWhere('LOWER(user.location) LIKE :location', { 
+        location: `%${location.toLowerCase()}%` 
+      });
+    }
+
+    const users = await query.getMany();
+
+    return users.map(user => {
+      const positionTitle = user.position || (user.positionRef as any)?.title || 'Not specified';
+      
+      return {
+        id: user.id,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email,
+        phoneNumber: user.phoneNumber || '',
+        positionTitle,
+        departmentName: user.department?.name || 'Not assigned',
+        location: user.location || 'Not specified',
+        profilePictureUrl: user.profilePictureUrl || '',
+        isActive: user.isActive,
+      } as EmployeeDirectoryDto;
+    });
+  }
+
+  async exportEmployeeDirectory(filters: DirectoryFiltersDto): Promise<Buffer> {
+    const employees = await this.getEmployeeDirectory(filters);
+    
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Employee Directory');
+    
+    // Add headers
+    worksheet.columns = [
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Phone', key: 'phone', width: 20 },
+      { header: 'Position', key: 'position', width: 30 },
+      { header: 'Department', key: 'department', width: 25 },
+      { header: 'Location', key: 'location', width: 25 },
+    ];
+
+    // Add data rows
+    employees.forEach(employee => {
+      worksheet.addRow({
+        name: `${employee.firstName} ${employee.lastName}`,
+        email: employee.email,
+        phone: employee.phoneNumber,
+        position: employee.positionTitle,
+        department: employee.departmentName,
+        location: employee.location,
+      });
+    });
+
+    // Generate Excel file
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
   }
 
   async findOneByEmail(email: string): Promise<User | null> {

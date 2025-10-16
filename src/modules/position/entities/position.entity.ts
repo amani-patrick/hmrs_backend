@@ -41,6 +41,15 @@ export class Position {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Column({ type: 'jsonb', nullable: true })
+  keyRequirements: Record<string, any>; 
+
+  @Column({ type: 'jsonb', nullable: true })
+  responsibilities: Record<string, any>;  
+
+  @Column({ type: 'jsonb', nullable: true })
+  details: { tags: string[] }; 
+
   constructor(partial?: Partial<Position>) {
     if (partial) {
       Object.assign(this, partial);

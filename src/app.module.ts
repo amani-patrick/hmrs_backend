@@ -13,6 +13,7 @@ import { DashboardController } from './admin/dashboard/dashboard.controller';
 import { AdminService } from './modules/admin/admin.service';
 import { RecruitmentModule } from './modules/recruitment/recruitment.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
+import { LeaveModule } from './modules/leave/leave.module';
 
 
 
@@ -61,6 +62,8 @@ import { PayrollModule } from './modules/payroll/payroll.module';
     RecruitmentModule,
 
     PayrollModule,
+
+    LeaveModule,
   ],
   controllers: [DashboardController],
   providers: [AdminService],

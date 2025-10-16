@@ -1,8 +1,8 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
+import { IsEnum, IsOptional } from 'class-validator';
 import { CreateJobPostingDto } from './create-job-posting.dto';
-import { JobStatus } from '../../../common/enums/job-status.enum';
+import { JobStatus } from '../enums/job-status.enum';
 import { JobPostingLocation } from '../../../common/enums/job-location.enum';
-import { IsOptional, IsEnum } from 'class-validator';
 
 export class UpdateJobPostingDto extends PartialType(CreateJobPostingDto) {
   @IsOptional()
@@ -13,4 +13,6 @@ export class UpdateJobPostingDto extends PartialType(CreateJobPostingDto) {
   @IsEnum(JobPostingLocation)
   postingLocation?: JobPostingLocation;
 
+  publishedAt?: Date;
+  closedAt?: Date;
 }
