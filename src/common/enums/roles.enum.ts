@@ -1,5 +1,5 @@
 export enum Role {
-    // Platform-level: Exists only in the 'public' schema
+
     SUPER_ADMIN = 'super_admin', 
     
 

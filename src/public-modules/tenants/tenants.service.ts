@@ -26,8 +26,40 @@ export class TenantsService {
     return this.tenantRepository.findOne({ where: { Name: name } });
   }
 
-  findUserByEmail(email: string): Promise<any> {
-    return Promise.resolve(null);
+  async findUserByEmail(email: string): Promise<User | null> {
+    // Search across all tenant schemas for the email
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    
+    try {
+      // First check in public schema (main users table if exists)
+      const publicUser = await queryRunner.manager
+        .getRepository(User)
+        .findOne({ where: { email } });
+      
+      if (publicUser) {
+        return publicUser;
+      }
+
+      // Get all tenants
+      const tenants = await this.tenantRepository.find();
+      
+      // Check each tenant schema
+      for (const tenant of tenants) {
+        await queryRunner.query(`SET search_path TO "${tenant.schemaName}"`);
+        const user = await queryRunner.manager
+          .getRepository(User)
+          .findOne({ where: { email } });
+        
+        if (user) {
+          return user;
+        }
+      }
+      
+      return null;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async deleteTenant(id: string): Promise<void> {

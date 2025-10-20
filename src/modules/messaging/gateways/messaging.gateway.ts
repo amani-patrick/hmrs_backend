@@ -28,7 +28,7 @@ import { Message } from '../entities/message.entity';
 export class MessagingGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(MessagingGateway.name);
   @WebSocketServer() server: Server;
-  private connectedUsers = new Map<string, string>(); // userId -> socketId
+  private connectedUsers = new Map<string, string>(); 
 
   constructor(
     private readonly messageService: MessageService,

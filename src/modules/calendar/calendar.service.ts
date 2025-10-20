@@ -140,3 +140,4 @@ export class CalendarService {
       .orderBy('event.startTime', 'ASC')
       .getMany();
   }
+}
