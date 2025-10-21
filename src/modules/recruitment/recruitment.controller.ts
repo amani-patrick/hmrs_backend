@@ -1,21 +1,22 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Param, 
-  UseGuards, 
-  Put, 
-  Delete, 
-  Query, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  Query,
+  UseGuards,
+  Req,
   ParseIntPipe,
-  HttpStatus,
-  BadRequestException
+  NotFoundException,
+  Req as Request
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { 
-  ApiTags, 
-  ApiOperation, 
+import {
+  ApiTags,
+  ApiOperation,
   ApiResponse, 
   ApiBearerAuth, 
   ApiQuery,
@@ -24,11 +25,9 @@ import {
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums/roles.enum';
-import { 
-  RecruitmentService, 
-  CandidateStatus, 
-  InterviewStatus 
-} from './recruitment.service';
+import { RecruitmentService } from './recruitment.service';
+import { CandidateStatus } from './entities/candidate.entity';
+import { InterviewStatus } from './entities/interview.entity';
 import { CreateJobPostingDto } from './dto/create-job-posting.dto';
 import { UpdateJobPostingDto } from './dto/update-job-posting.dto';
 import { CreateCandidateDto } from './dto/create-candidate.dto';

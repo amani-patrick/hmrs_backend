@@ -163,13 +163,13 @@ export class LeaveService {
 
     request.status = dto.status;
     request.approverId = approverId;
-    request.approverNotes = dto.approverNotes;
+    request.approverNotes = dto.approverNotes || null;
     request.approvedAt = new Date();
 
     const saved = await this.leaveRequestRepository.save(request);
 
     // Update balance
-    const balance = await this.getLeaveBalance(tenantId, request.employeeId, request.leaveTypeId);
+    const balance = await this.getLeaveBalance(tenantId, request.employeeId!, request.leaveTypeId!);
     if (balance) {
       balance.pendingDays -= request.daysRequested;
 
@@ -202,7 +202,7 @@ export class LeaveService {
     const saved = await this.leaveRequestRepository.save(request);
 
     // Restore balance
-    const balance = await this.getLeaveBalance(tenantId, employeeId, request.leaveTypeId);
+    const balance = await this.getLeaveBalance(tenantId, employeeId, request.leaveTypeId!);
     if (balance) {
       if (previousStatus === LeaveStatus.PENDING) {
         balance.pendingDays -= request.daysRequested;

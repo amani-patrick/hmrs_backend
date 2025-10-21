@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-interface DashboardStats {
+export interface DashboardStats {
   value: string | number;
   label: string;
   change?: string;

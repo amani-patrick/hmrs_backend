@@ -4,25 +4,25 @@ import { Repository } from 'typeorm';
 import { PayrollRecord } from './entities/payroll-record.entity';
 import { BenefitsPlan } from './entities/benefits-plan.entity';
 import { SalaryGrade } from './entities/salary-grade.entity';
-import * as iremboPayInterface from './irembo-pay/irembo-pay.interface';
+import { IremboPayClient } from './irembo-pay/irembo-pay.client';
+import { IremboPaymentRequest } from './irembo-pay/irembo-pay.interface';
 import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class PayrollService {
   constructor(
     @Inject('PAYROLL_RECORD_REPOSITORY')
-    private payrollRecordRepository: Repository<PayrollRecord>,
+    private readonly payrollRecordRepository: Repository<PayrollRecord>,
     @Inject('BENEFITS_PLAN_REPOSITORY')
-    private benefitsPlanRepository: Repository<BenefitsPlan>,
+    private readonly benefitsPlanRepository: Repository<BenefitsPlan>,
     @Inject('SALARY_GRADE_REPOSITORY')
-    private salaryGradeRepository: Repository<SalaryGrade>,
-    private readonly iremboPayClient: iremboPayInterface.IIremboPayClient,
+    private readonly salaryGradeRepository: Repository<SalaryGrade>,
+    private readonly iremboPayClient: IremboPayClient,
   ) {}
 
   async getOverviewStats() {
     const monthlyPayrollResult = await this.payrollRecordRepository
       .createQueryBuilder('record')
-      .select('SUM(record.netAmount)', 'monthlyPayroll')
       .getRawOne();
       
     const employeesProcessed = await this.payrollRecordRepository.count({ 
@@ -54,7 +54,7 @@ export class PayrollService {
 
     // Process each payment
     for (const recordData of mockEmployeeRecords) {
-      const paymentRequest: iremboPayInterface.IremboPaymentRequest = {
+      const paymentRequest: IremboPaymentRequest = {
         billId,
         amount: recordData.netAmount,
         currency: 'RWF',

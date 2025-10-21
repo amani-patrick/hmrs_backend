@@ -32,6 +32,13 @@ import { PerformanceModule } from './modules/performance/performance.module';
 import { TrainingModule } from './modules/training/training.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { EmployeePortalModule } from './modules/employee-portal/employee-portal.module';
+import { HelpdeskModule } from './modules/helpdesk/helpdesk.module';
+import { ManagerDashboardModule } from './modules/manager-dashboard/manager-dashboard.module';
 
 @Module({
   imports: [
@@ -75,6 +82,13 @@ import { ReportsModule } from './modules/reports/reports.module';
     TrainingModule,
     AuditModule,
     ReportsModule,
+    AttendanceModule,
+    OnboardingModule,
+    NotificationsModule,
+    AnalyticsModule,
+    EmployeePortalModule,
+    HelpdeskModule,
+    ManagerDashboardModule,
   ],
   controllers: [AppController],
   providers: [

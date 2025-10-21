@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { createReadStream, createWriteStream, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
@@ -50,7 +51,7 @@ export class FileUploadService {
     return {
       filename,
       path: filePath,
-      url: `/files/${category}/${filename}`,
+      url: `/files/${String(category)}/${filename}`,
     };
   }
 

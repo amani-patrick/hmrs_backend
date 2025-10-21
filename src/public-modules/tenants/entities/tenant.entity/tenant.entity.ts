@@ -5,13 +5,13 @@ export class TenantEntity {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({unique: true, nullable: false})
+    @Column({ type: 'varchar', unique: true, nullable: false })
     Name: string;
 
-    @Column({unique: true})
-    schemaName;
+    @Column({ type: 'varchar', unique: true })
+    schemaName: string;
 
-    @Column({default: 'active'})
+    @Column({ type: 'varchar', default: 'active' })
     status: string;
 
     @CreateDateColumn()

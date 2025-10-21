@@ -9,10 +9,10 @@ export class User {
   @PrimaryGeneratedColumn('uuid') 
   id: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   email: string;
 
-  @Column({ select: false, nullable: true })
+  @Column({ type: 'text', select: false, nullable: true })
   password: string | null;
 
   @Column({ type: 'enum', enum: Role, default: Role.EMPLOYEE }) 
@@ -21,10 +21,10 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   firstName: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   lastName: string | null;
 
   @CreateDateColumn()
@@ -33,16 +33,16 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   position: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   phoneNumber: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   location: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   profilePictureUrl: string | null;
 
   @ManyToOne(() => Position, { nullable: true })
@@ -52,7 +52,7 @@ export class User {
   @Column({ type: 'uuid', nullable: true })
   positionId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   tenantId: string | null;
 
   @ManyToOne(() => Department, department => department.members, { onDelete: 'SET NULL' })

@@ -162,6 +162,7 @@ export class RecruitmentService {
 
   async findAllCandidates(
     filters: {
+      status?: CandidateStatus;
       jobPostingId?: string;
       search?: string;
     } = {},
@@ -177,10 +178,20 @@ export class RecruitmentService {
       }
     };
     
-    // Apply search
+    // Apply filters
+    if (filters.status) {
+      where.status = filters.status;
+    }
+    if (filters.jobPostingId) {
+      where.jobPostingId = filters.jobPostingId;
+    }
+    if (filters.search) {
+      where['name'] = ILike(`%${filters.search}%`) as any;
+    }
+    
+    // Apply search from pagination
     if (searchTerm) {
       where['name'] = ILike(`%${searchTerm}%`) as any;
-      // You can add more searchable fields as needed
     }
 
     const order: FindOptionsOrder<Candidate> = {};
@@ -362,5 +373,85 @@ export class RecruitmentService {
     };
     
     return stats;
+  }
+
+  async updateInterview(id: string, updateInterviewDto: UpdateInterviewDto): Promise<Interview> {
+    const interview = await this.interviewRepository.findOne({ where: { id } });
+    
+    if (!interview) {
+      throw new NotFoundException(`Interview with ID ${id} not found`);
+    }
+
+    Object.assign(interview, updateInterviewDto);
+    return this.interviewRepository.save(interview);
+  }
+
+  async getJobPostingStats() {
+    const [total, active, draft, closed] = await Promise.all([
+      this.jobPostingRepository.count(),
+      this.jobPostingRepository.count({ where: { status: JobStatus.PUBLISHED } }),
+      this.jobPostingRepository.count({ where: { status: JobStatus.DRAFT } }),
+      this.jobPostingRepository.count({ where: { status: JobStatus.CLOSED } }),
+    ]);
+
+    return { total, active, draft, closed };
+  }
+
+  async findCandidateById(id: string): Promise<Candidate> {
+    const candidate = await this.candidateRepository.findOne({ where: { id } });
+    if (!candidate) {
+      throw new NotFoundException(`Candidate with ID ${id} not found`);
+    }
+    return candidate;
+  }
+
+  async updateCandidate(id: string, updateCandidateDto: UpdateCandidateDto): Promise<Candidate> {
+    const candidate = await this.findCandidateById(id);
+    Object.assign(candidate, updateCandidateDto);
+    return this.candidateRepository.save(candidate);
+  }
+
+  async updateCandidateStatus(id: string, status: string): Promise<Candidate> {
+    const candidate = await this.findCandidateById(id);
+    candidate.status = status as CandidateStatus;
+    return this.candidateRepository.save(candidate);
+  }
+
+  async removeCandidate(id: string): Promise<void> {
+    const result = await this.candidateRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Candidate with ID ${id} not found`);
+    }
+  }
+
+  async scheduleInterview(createInterviewDto: CreateInterviewDto): Promise<Interview> {
+    const interview = this.interviewRepository.create(createInterviewDto);
+    return this.interviewRepository.save(interview);
+  }
+
+  async getInterviews(filters: any): Promise<Interview[]> {
+    const where: any = {};
+    if (filters.status) where.status = filters.status;
+    if (filters.candidateId) where.candidateId = filters.candidateId;
+    return this.interviewRepository.find({ where, relations: ['candidate', 'interviewer'] });
+  }
+
+  async findInterviewById(id: string): Promise<Interview | null> {
+    return this.interviewRepository.findOne({ where: { id }, relations: ['candidate', 'interviewer'] });
+  }
+
+  async getRecruitmentStats(): Promise<RecruitmentStatsResponseDto> {
+    const [jobPostingStats, candidateStats, interviewStats] = await Promise.all([
+      this.getJobPostingStats(),
+      this.getCandidateStats(),
+      this.getInterviewCalendar(),
+    ]);
+
+    return {
+      jobPostings: jobPostingStats,
+      candidates: candidateStats,
+      interviews: interviewStats,
+      lastUpdated: new Date(),
+    };
   }
 }

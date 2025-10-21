@@ -9,7 +9,7 @@ import {
   OnGatewayInit,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Injectable, UseGuards, Logger } from '@nestjs/common';
+import { Injectable, UseGuards, Logger, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { WsJwtAuthGuard } from '../../../auth/guards/ws-jwt-auth.guard';
 import { MessageService } from '../message.service';
@@ -31,7 +31,9 @@ export class MessagingGateway implements OnGatewayInit, OnGatewayConnection, OnG
   private connectedUsers = new Map<string, string>(); 
 
   constructor(
+    @Inject(forwardRef(() => MessageService))
     private readonly messageService: MessageService,
+    @Inject(forwardRef(() => ConversationService))
     private readonly conversationService: ConversationService,
     private readonly jwtService: JwtService,
   ) {}

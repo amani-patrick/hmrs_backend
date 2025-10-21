@@ -23,6 +23,7 @@ export class MessageService {
     private messageRepository: Repository<Message>,
     @Inject(forwardRef(() => ConversationService))
     private conversationService: ConversationService,
+    @Inject(forwardRef(() => MessagingGateway))
     private messagingGateway: MessagingGateway,
   ) {}
 
@@ -257,5 +258,23 @@ export class MessageService {
       .andWhere('(\"readBy\" IS NULL OR NOT (\"readBy\" @> :userRead))')
       .setParameter('userRead', JSON.stringify([{ userId, readAt: new Date() }]))
       .execute();
+  }
+
+  async delete(id: string, userId: string, tenantId: string): Promise<void> {
+    const message = await this.messageRepository.findOne({ where: { id, tenantId } });
+    
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    // Only the sender can delete the message
+    if (message.senderId !== userId) {
+      throw new BadRequestException('You can only delete your own messages');
+    }
+
+    await this.messageRepository.remove(message);
+    
+    // Notify participants about the message deletion
+    await this.messagingGateway.notifyMessageDeleted(message.conversationId, id);
   }
 }

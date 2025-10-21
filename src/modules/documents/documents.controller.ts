@@ -15,11 +15,11 @@ import {
   StreamableFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
-import { UserRole } from '../../users/entities/user.entity';
+import { Role } from '../../common/enums/roles.enum';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { CreatePolicyDto } from './dto/create-policy.dto';
@@ -35,7 +35,7 @@ export class DocumentsController {
   // Document Library Endpoints
   @Get('library/stats')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.HR, UserRole.MANAGER)
+  @Roles(Role.ADMIN, Role.HR, Role.MANAGER)
   async getDocumentLibraryStats() {
     return this.documentsService.getDocumentLibraryStats();
   }
@@ -51,7 +51,7 @@ export class DocumentsController {
   async uploadDocument(
     @Request() req,
     @Body() createDocumentDto: CreateDocumentDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
   ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
@@ -60,13 +60,15 @@ export class DocumentsController {
     // In a real app, upload the file to cloud storage here
     const fileUrl = `https://storage.example.com/documents/${file.originalname}`;
     
+    const documentData: any = {
+      ...createDocumentDto,
+      fileUrl,
+      fileSize: file.size,
+      fileType: file.mimetype,
+    };
+    
     return this.documentsService.createDocument(
-      {
-        ...createDocumentDto,
-        fileUrl,
-        fileSize: file.size,
-        fileType: file.mimetype,
-      },
+      documentData,
       req.user.id,
     );
   }
@@ -104,7 +106,7 @@ export class DocumentsController {
   // Policy Endpoints
   @Get('policies/stats')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.HR, UserRole.MANAGER)
+  @Roles(Role.ADMIN, Role.HR, Role.MANAGER)
   async getPolicyStats() {
     return this.documentsService.getPolicyStats();
   }
@@ -117,12 +119,12 @@ export class DocumentsController {
 
   @Post('policies')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.HR)
+  @Roles(Role.ADMIN, Role.HR)
   @UseInterceptors(FileInterceptor('file'))
   async createPolicy(
     @Request() req,
     @Body() createPolicyDto: CreatePolicyDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
   ) {
     if (!file) {
       throw new BadRequestException('Policy document is required');
@@ -161,14 +163,14 @@ export class DocumentsController {
   // Contract Endpoints
   @Get('contracts/stats')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.HR, UserRole.MANAGER)
+  @Roles(Role.ADMIN, Role.HR, Role.MANAGER)
   async getContractStats() {
     return this.documentsService.getContractStats();
   }
 
   @Get('contracts')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.HR, UserRole.MANAGER)
+  @Roles(Role.ADMIN, Role.HR, Role.MANAGER)
   async getContracts(@Query('status') status?: string) {
     // Add filtering and access control logic
     return [];
@@ -176,12 +178,12 @@ export class DocumentsController {
 
   @Post('contracts')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.HR)
+  @Roles(Role.ADMIN, Role.HR)
   @UseInterceptors(FileInterceptor('file'))
   async createContract(
     @Request() req,
     @Body() createContractDto: CreateContractDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
   ) {
     if (!file) {
       throw new BadRequestException('Contract document is required');
@@ -190,11 +192,13 @@ export class DocumentsController {
     // Upload the contract document
     const fileUrl = `https://storage.example.com/contracts/${file.originalname}`;
     
+    const contractData: any = {
+      ...createContractDto,
+      fileUrl,
+    };
+    
     return this.documentsService.createContract(
-      {
-        ...createContractDto,
-        fileUrl,
-      },
+      contractData,
       req.user.id,
     );
   }
@@ -207,7 +211,7 @@ export class DocumentsController {
 
   @Post('templates/:id/clone')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.HR, UserRole.MANAGER)
+  @Roles(Role.ADMIN, Role.HR, Role.MANAGER)
   async cloneTemplate(
     @Request() req,
     @Param('id', ParseUUIDPipe) id: string,

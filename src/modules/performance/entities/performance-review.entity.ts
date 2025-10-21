@@ -128,7 +128,7 @@ export class PerformanceReview {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   createdBy: string | null;
 
   @Column({ type: 'jsonb', nullable: true })

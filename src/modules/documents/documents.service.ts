@@ -9,7 +9,7 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { AcknowledgePolicyDto } from './dto/acknowledge-policy.dto';
-import { UserRole } from '../../users/entities/user.entity';
+import { Role } from '../../common/enums/roles.enum';
 
 @Injectable()
 export class DocumentsService {
@@ -144,12 +144,9 @@ export class DocumentsService {
   }
 
   // Contract Methods
-  async createContract(createContractDto: CreateContractDto, userId: string): Promise<Contract> {
-    const contract = this.contractRepository.create({
-      ...createContractDto,
-      createdById: userId,
-    });
-    return this.contractRepository.save(contract);
+  async createContract(createContractDto: any, userId: string): Promise<Contract> {
+    const contract = this.contractRepository.create(createContractDto);
+    return await this.contractRepository.save(contract) as any as Contract;
   }
 
   async getContractStats() {

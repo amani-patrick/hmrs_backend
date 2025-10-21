@@ -46,7 +46,7 @@ export class AuditController {
   @ApiQuery({ name: 'startDate', required: false })
   @ApiQuery({ name: 'endDate', required: false })
   @ApiResponse({ status: 200, description: 'Reports retrieved successfully' })
-  async getAllCompliance Reports(
+  async getAllComplianceReports(
     @Req() req: any,
     @Query('complianceType') complianceType?: ComplianceType,
     @Query('status') status?: ComplianceStatus,

@@ -22,10 +22,12 @@ import { TENANT_DATA_SOURCE } from '../../tenancy/tenancy.symbols';
     },
     UsersService,
   ],
+  controllers: [UsersController],
   imports: [
     TypeOrmModule.forFeature([User]),
     forwardRef(() => DepartmentModule),
     forwardRef(() => PayrollModule),
   ],
+  exports: [UsersService, 'USER_REPOSITORY'],
 })
 export class UsersModule {}

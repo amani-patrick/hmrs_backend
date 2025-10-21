@@ -10,7 +10,7 @@ import {
   Delete,
   Put
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { TenantId } from '../../common/decorators/tenant.decorator';
 import { UserId } from '../../common/decorators/user.decorator';
 import { MessageService } from './message.service';
@@ -36,19 +36,11 @@ export class MessageController {
     @Param('conversationId', ParseUUIDPipe) conversationId: string,
     @UserId() userId: string,
     @Body() createMessageDto: CreateMessageDto,
-    @User() user: any // Assuming you have a User decorator that gets the full user object
   ) {
     return this.messageService.create(
-      tenantId,
-      conversationId,
-      createMessageDto,
+      { ...createMessageDto, conversationId },
       userId,
-      { 
-        id: userId,
-        name: user.name,
-        email: user.email,
-        avatar: user.avatar
-      }
+      tenantId,
     );
   }
 
@@ -61,7 +53,7 @@ export class MessageController {
     @UserId() userId: string,
     @Query() query: MessageQueryDto
   ) {
-    return this.messageService.findAll(tenantId, conversationId, query, userId);
+    return this.messageService.findAll(tenantId, conversationId, userId, query);
   }
 
   @Get(':id')
@@ -91,7 +83,7 @@ export class MessageController {
     @UserId() userId: string,
     @Body() updateMessageDto: UpdateMessageDto
   ) {
-    return this.messageService.update(tenantId, conversationId, id, updateMessageDto, userId);
+    return this.messageService.update(id, updateMessageDto, userId, tenantId);
   }
 
   @Delete(':id')
@@ -105,7 +97,7 @@ export class MessageController {
     @Param('id', ParseUUIDPipe) id: string,
     @UserId() userId: string
   ) {
-    return this.messageService.remove(tenantId, conversationId, id, userId);
+    return this.messageService.delete(id, userId, tenantId);
   }
 
   @Post(':id/react/:emoji')

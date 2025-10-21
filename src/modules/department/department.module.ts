@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { TENANT_DATA_SOURCE } from '../../tenancy/tenancy.symbols';
 import { DepartmentService } from './department.service';
 import { DepartmentController } from './department.controller';
+import { Department } from './entities/department.entity';
 
 @Module({
   controllers: [DepartmentController],

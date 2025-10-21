@@ -525,7 +525,7 @@ export class TrainingService {
     const recentActivity = recentEnrollments.map(e => ({
       type: e.status === EnrollmentStatus.COMPLETED ? 'completion' : 'enrollment',
       description: `${e.learner?.firstName || 'User'} ${e.status === EnrollmentStatus.COMPLETED ? 'completed' : 'enrolled in'} ${e.course?.title || 'course'}`,
-      timestamp: e.status === EnrollmentStatus.COMPLETED ? e.completedDate : e.enrolledDate,
+      timestamp: (e.status === EnrollmentStatus.COMPLETED ? e.completedDate : e.enrolledDate) || e.createdAt,
     }));
 
     return {

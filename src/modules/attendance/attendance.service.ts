@@ -78,7 +78,7 @@ export class AttendanceService {
 
     attendance.checkOutTime = checkOutTime;
     attendance.checkOutMethod = dto.method || CheckInMethod.WEB;
-    attendance.checkOutLocation = dto.location;
+    attendance.checkOutLocation = dto.location || null;
 
     // Calculate hours worked
     if (attendance.checkInTime) {

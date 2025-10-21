@@ -48,6 +48,6 @@ import { UsersModule } from '../users/users.module';
     },
     RecruitmentService,
   ],
-  exports: [RecruitmentService],
+  exports: [RecruitmentService, 'CANDIDATE_REPOSITORY'],
 })
 export class RecruitmentModule {}

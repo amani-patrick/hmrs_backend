@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { DatabaseModule } from '../../database/database.module';
+import { DatabaseModule } from '../database/database.module';
 import { LeaveService } from './leave.service';
 import { LeaveController } from './leave.controller';
 import { leaveProviders } from './leave.providers';
@@ -8,6 +8,6 @@ import { leaveProviders } from './leave.providers';
   imports: [DatabaseModule],
   providers: [LeaveService, ...leaveProviders],
   controllers: [LeaveController],
-  exports: [LeaveService],
+  exports: [LeaveService, 'LEAVE_REQUEST_REPOSITORY'],
 })
 export class LeaveModule {}
