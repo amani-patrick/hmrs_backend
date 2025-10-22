@@ -23,17 +23,17 @@ export class Assessment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   courseId: string | null;
 
   @ManyToOne(() => Course, { nullable: true })
   @JoinColumn({ name: 'courseId' })
   course: Course | null;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column({ type: 'text', nullable: true })
@@ -42,13 +42,13 @@ export class Assessment {
   @Column({ type: 'enum', enum: AssessmentType })
   type: AssessmentType;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   duration: number; // In minutes
 
   @Column({ type: 'decimal', precision: 3, scale: 2 })
   passingScore: number;
 
-  @Column({ default: 1 })
+  @Column({ type: 'int', default: 1 })
   maxAttempts: number;
 
   @Column({ default: false })
@@ -89,7 +89,7 @@ export class Assessment {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   createdBy: string | null;
 
   @Column({ type: 'jsonb', nullable: true })

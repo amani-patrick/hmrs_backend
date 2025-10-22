@@ -5,8 +5,8 @@ export class TimeEntry {
     @PrimaryGeneratedColumn('uuid') 
     id: string;
     
-    @Column() 
-    userId: string;
+    @Column({ type: 'uuid' })
+  userId: string;
     
     @Column({ type: 'timestamp' }) 
     clockInTime: Date;

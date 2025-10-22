@@ -19,10 +19,10 @@ export class SystemSetting {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   key: string;
 
   @Column({ type: 'text' })

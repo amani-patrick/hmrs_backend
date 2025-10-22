@@ -11,10 +11,10 @@ export class LearningPath {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column({ type: 'text', nullable: true })
@@ -43,7 +43,7 @@ export class LearningPath {
   @Column({ type: 'jsonb', nullable: true })
   skills: string[];
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   thumbnailUrl: string | null;
 
   @Column({ default: 0 })
@@ -61,7 +61,7 @@ export class LearningPath {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   createdBy: string | null;
 
   @Column({ type: 'jsonb', nullable: true })

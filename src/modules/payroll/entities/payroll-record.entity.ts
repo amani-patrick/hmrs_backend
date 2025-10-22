@@ -6,7 +6,7 @@ export class PayrollRecord {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId: string;
 
   @ManyToOne(() => User)
@@ -31,7 +31,7 @@ export class PayrollRecord {
   @Column({ type: 'varchar', default: 'Pending' })
   paymentStatus: string; // 'Pending', 'Processed', 'Failed'
   
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   iremboPayBillId: string; // Reference to the payment platform
   
   @CreateDateColumn()

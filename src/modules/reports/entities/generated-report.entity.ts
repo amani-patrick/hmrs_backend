@@ -17,17 +17,17 @@ export class GeneratedReport {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   templateId: string;
 
   @ManyToOne(() => ReportTemplate)
   @JoinColumn({ name: 'templateId' })
   template: ReportTemplate;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name: string;
 
   @Column({ type: 'text', nullable: true })
@@ -51,13 +51,13 @@ export class GeneratedReport {
     [key: string]: any;
   };
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   fileUrl: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   fileName: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   fileSize: string | null; // e.g., '2.4 MB'
 
   @Column({ type: 'int', nullable: true })
@@ -69,7 +69,7 @@ export class GeneratedReport {
   @Column({ nullable: true })
   generatedBy: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   generatedByName: string | null;
 
   @Column({ type: 'timestamp', nullable: true })

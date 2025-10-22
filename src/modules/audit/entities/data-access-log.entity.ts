@@ -18,43 +18,43 @@ export class DataAccessLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   userName: string;
 
   @Column({ type: 'enum', enum: AccessAction })
   action: AccessAction;
 
-  @Column()
+  @Column({ type: 'varchar' })
   entityType: string; // e.g., 'User', 'PayrollRecord'
 
-  @Column()
+  @Column({ type: 'varchar' })
   entityId: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   entityDescription: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
   accessedFields: string[]; // Which fields were accessed
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   purpose: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   ipAddress: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   userAgent: string | null;
 
   @Column({ default: true })
   isAuthorized: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   authorizationReason: string | null;
 
   @Column({ type: 'timestamp' })

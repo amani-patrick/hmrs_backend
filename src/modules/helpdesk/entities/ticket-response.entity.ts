@@ -6,16 +6,16 @@ export class TicketResponse {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   ticketId: string;
 
   @Column({ type: 'text' })
   message: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   respondedBy: string;
 
   @Column({ nullable: true })

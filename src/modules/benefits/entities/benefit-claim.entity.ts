@@ -13,16 +13,16 @@ export class BenefitClaim {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   employeeId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   enrollmentId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   claimNumber: string;
 
   @Column({ type: 'date' })
@@ -43,7 +43,7 @@ export class BenefitClaim {
   @Column({ type: 'jsonb', nullable: true })
   attachments: string[];
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   reviewedBy: string | null;
 
   @Column({ type: 'text', nullable: true })

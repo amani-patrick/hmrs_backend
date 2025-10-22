@@ -6,11 +6,11 @@ export class Policy {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column()
-    title: string;
+    @Column({ type: 'varchar' })
+  title: string;
 
-    @Column()
-    documentId: string;
+    @Column({ type: 'varchar' })
+  documentId: string;
 
     @Column({ default: '1.0' })
     version: string;
@@ -33,8 +33,8 @@ export class Policy {
     @Column({ nullable: true })
     category: string;
 
-    @Column()
-    createdById: string;
+    @Column({ type: 'varchar' })
+  createdById: string;
 
     @Column({ nullable: true })
     updatedById: string;

@@ -18,19 +18,19 @@ export class AuditLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   userId: string | null;
 
   @Column({ type: 'enum', enum: AuditAction })
   action: AuditAction;
 
-  @Column()
+  @Column({ type: 'varchar' })
   entityType: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   entityId: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
@@ -39,10 +39,10 @@ export class AuditLog {
   @Column({ type: 'jsonb', nullable: true })
   newValue: any;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   ipAddress: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   userAgent: string | null;
 
   @Column({ type: 'text', nullable: true })

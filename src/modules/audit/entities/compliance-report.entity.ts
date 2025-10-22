@@ -26,10 +26,10 @@ export class ComplianceReport {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column({ type: 'text', nullable: true })
@@ -47,10 +47,10 @@ export class ComplianceReport {
   @Column({ type: 'date', nullable: true })
   nextReviewDate: Date | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   departmentId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   responsiblePersonId: string | null;
 
   @Column({ type: 'jsonb' })
@@ -79,10 +79,10 @@ export class ComplianceReport {
     type: string;
   }>;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   auditorId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   auditorName: string | null;
 
   @Column({ default: false })
@@ -94,7 +94,7 @@ export class ComplianceReport {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   createdBy: string | null;
 
   @Column({ type: 'jsonb', nullable: true })

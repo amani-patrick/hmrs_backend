@@ -10,6 +10,7 @@ import { CreateUserDto, CompleteSignupDto } from './dto/create-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { EmployeeStatsResponseDto } from './dto/employee-stats-response.dto';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { Role } from 'src/common/enums/roles.enum';
 
 @Injectable()
@@ -24,18 +25,47 @@ export class UsersService {
     
     const existingUser = await this.userRepository.findOne({ where: { email } });
     if (existingUser) {
-        throw new Error('User already exists in this Organization');
+        throw new BadRequestException('User already exists in this Organization');
     }
+    
+    // Generate invitation token (valid for 7 days)
+    const invitationToken = crypto.randomBytes(32).toString('hex');
+    const invitationExpiry = new Date();
+    invitationExpiry.setDate(invitationExpiry.getDate() + 7);
     
     const newUser = this.userRepository.create({
       email,
       role,
       isActive: false,
+      invitationToken,
+      invitationExpiry,
     });
     
-    // Send a unique signup link
+    // TODO: Send invitation email with token
+    // const invitationLink = `${process.env.FRONTEND_URL}/complete-signup?token=${invitationToken}`;
     
     return this.userRepository.save(newUser);
+  }
+
+  async verifyInvitationToken(token: string): Promise<User> {
+    const user = await this.userRepository.findOne({ 
+      where: { invitationToken: token },
+      select: ['id', 'email', 'role', 'invitationExpiry', 'isActive']
+    });
+    
+    if (!user) {
+      throw new NotFoundException('Invalid invitation token');
+    }
+    
+    if (user.invitationExpiry && user.invitationExpiry < new Date()) {
+      throw new BadRequestException('Invitation token has expired');
+    }
+    
+    if (user.isActive) {
+      throw new BadRequestException('User account is already active');
+    }
+    
+    return user;
   }
 
   async getEmployeeDirectory(filters: DirectoryFiltersDto): Promise<EmployeeDirectoryDto[]> {
@@ -129,11 +159,21 @@ export class UsersService {
     });
   }
 
-  async completeSignup(userId: string, completeSignupDto: CompleteSignupDto): Promise<User> {
-      const user = await this.userRepository.findOne({ where: { id: userId } });
+  async completeSignup(token: string, completeSignupDto: CompleteSignupDto): Promise<User> {
+      const user = await this.userRepository.findOne({ 
+        where: { invitationToken: token } 
+      });
       
       if (!user) {
-          throw new NotFoundException(`User with ID ${userId} not found.`);
+          throw new NotFoundException('Invalid invitation token');
+      }
+      
+      if (user.invitationExpiry && user.invitationExpiry < new Date()) {
+        throw new BadRequestException('Invitation token has expired');
+      }
+      
+      if (user.isActive) {
+        throw new BadRequestException('User account is already active');
       }
 
       user.password = await bcrypt.hash(completeSignupDto.password, 12);
@@ -141,6 +181,10 @@ export class UsersService {
       user.firstName = completeSignupDto.firstName;
       user.lastName = completeSignupDto.lastName;
       user.position = completeSignupDto.position || 'Employee';
+      user.phoneNumber = completeSignupDto.phoneNumber?.toString() || null;
+      user.location = completeSignupDto.Address || null;
+      user.invitationToken = null;
+      user.invitationExpiry = null;
       
       return this.userRepository.save(user);
   }

@@ -43,13 +43,13 @@ export class Notification {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column({ type: 'text' })
@@ -88,7 +88,7 @@ export class Notification {
     [key: string]: any;
   };
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   sentBy: string | null;
 
   @Column({ default: false })

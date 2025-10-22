@@ -10,8 +10,6 @@ export enum Role {
     AUDITOR = 'auditor',
     EMPLOYEE = 'employee',
 
-
-    BILLING = 'billing',
   }
   
   // A helper type for roles within a tenant

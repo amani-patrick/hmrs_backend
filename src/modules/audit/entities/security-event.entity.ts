@@ -36,7 +36,7 @@ export class SecurityEvent {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
   @Column({ type: 'enum', enum: SecurityEventType })
@@ -48,19 +48,19 @@ export class SecurityEvent {
   @Column({ type: 'enum', enum: SecurityEventStatus, default: SecurityEventStatus.NEW })
   status: SecurityEventStatus;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   userId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   ipAddress: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   userAgent: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   resource: string | null; // e.g., '/api/users'
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   action: string | null; // e.g., 'DELETE', 'UPDATE'
 
   @Column({ type: 'text' })
@@ -69,7 +69,7 @@ export class SecurityEvent {
   @Column({ type: 'jsonb', nullable: true })
   eventData: Record<string, any>;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   assignedTo: string | null;
 
   @Column({ type: 'text', nullable: true })

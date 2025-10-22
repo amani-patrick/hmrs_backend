@@ -5,8 +5,8 @@ export class OvertimeRequest {
     @PrimaryGeneratedColumn('uuid') 
     id: string;
     
-    @Column() 
-    userId: string;
+    @Column({ type: 'uuid' })
+  userId: string;
     
     @Column({ type: 'timestamp' }) 
     startTime: Date;
@@ -17,8 +17,8 @@ export class OvertimeRequest {
     @Column('decimal', { precision: 5, scale: 2 }) 
     hoursRequested: number;
     
-    @Column() 
-    reason: string;
+    @Column({ type: 'varchar' })
+  reason: string;
     
     @Column({ default: 'Pending' }) 
     status: string; // 'Pending', 'Approved', 'Rejected'

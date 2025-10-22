@@ -33,17 +33,17 @@ export class Goal {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   ownerId: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'ownerId' })
   owner: User;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column({ type: 'text', nullable: true })
@@ -86,10 +86,10 @@ export class Goal {
     completedAt?: string;
   }>;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   parentGoalId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   alignedGoalId: string | null; // For cascading goals
 
   @Column({ type: 'jsonb', nullable: true })
@@ -101,7 +101,7 @@ export class Goal {
   @Column({ default: 0 })
   weight: number; // For weighted scoring
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   reviewId: string | null; // Link to performance review
 
   @Column({ default: false })
@@ -113,10 +113,10 @@ export class Goal {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   createdBy: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   completedAt: Date | null;
 
   @Column({ type: 'jsonb', nullable: true })

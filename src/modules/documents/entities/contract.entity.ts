@@ -5,14 +5,14 @@ export class Contract {
     @PrimaryGeneratedColumn('uuid') 
     id: string;
     
-    @Column() 
-    userId: string; // Employee the contract belongs to
+    @Column({ type: 'uuid' })
+  userId: string; // Employee the contract belongs to
     
-    @Column() 
-    type: string; // e.g., 'Full-Time Employment', 'Part-Time', 'Contractor'
+    @Column({ type: 'varchar' })
+  type: string; // e.g., 'Full-Time Employment', 'Part-Time', 'Contractor'
     
-    @Column() 
-    fileUrl: string; // Link to the signed contract document
+    @Column({ type: 'varchar' })
+  fileUrl: string; // Link to the signed contract document
     
     @Column({ default: 'Draft' }) 
     status: string; // 'Draft', 'Active', 'Expired', 'Terminated'
@@ -20,7 +20,7 @@ export class Contract {
     @Column('decimal', { precision: 12, scale: 2 }) 
     salary: number;
     
-    @Column() 
+    @Column({ type: 'varchar' }) 
     currency: string = 'USD'; // Default currency
     
     @Column({ type: 'date' }) 

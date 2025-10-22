@@ -37,13 +37,13 @@ export class Ticket {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   ticketNumber: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   subject: string;
 
   @Column({ type: 'text' })
@@ -58,16 +58,16 @@ export class Ticket {
   @Column({ type: 'enum', enum: TicketStatus, default: TicketStatus.OPEN })
   status: TicketStatus;
 
-  @Column()
+  @Column({ type: 'uuid' })
   createdBy: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   createdByName: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   assignedTo: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   assignedToName: string;
 
   @Column({ type: 'timestamp', nullable: true })
@@ -76,13 +76,13 @@ export class Ticket {
   @Column({ type: 'timestamp', nullable: true })
   resolvedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   resolvedBy: string;
 
   @Column({ type: 'timestamp', nullable: true })
   closedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   closedBy: string;
 
   @Column({ type: 'text', nullable: true })
@@ -100,7 +100,7 @@ export class Ticket {
   @Column({ type: 'text', nullable: true })
   feedback: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   relatedTicketId: string;
 
   @Column({ default: 0 })

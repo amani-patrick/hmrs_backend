@@ -6,19 +6,19 @@ export class AttendanceSummary {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   employeeId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   employeeName: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   department: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   position: string | null;
 
   @Column({ type: 'int' })

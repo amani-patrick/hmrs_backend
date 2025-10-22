@@ -6,10 +6,10 @@ export class EmployeeProfile {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId: string;
 
   @Column({ type: 'jsonb', nullable: true })

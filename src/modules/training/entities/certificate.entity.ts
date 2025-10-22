@@ -14,34 +14,34 @@ export class Certificate {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
   @Column({ unique: true })
   certificateNumber: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   learnerId: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'learnerId' })
   learner: User;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   courseId: string | null;
 
   @ManyToOne(() => Course, { nullable: true })
   @JoinColumn({ name: 'courseId' })
   course: Course | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   programId: string | null;
 
   @ManyToOne(() => TrainingProgram, { nullable: true })
   @JoinColumn({ name: 'programId' })
   program: TrainingProgram | null;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column({ type: 'text', nullable: true })
@@ -56,16 +56,16 @@ export class Certificate {
   @Column({ type: 'enum', enum: CertificateStatus, default: CertificateStatus.ISSUED })
   status: CertificateStatus;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   issuedBy: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   issuedByName: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   templateId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   certificateUrl: string | null;
 
   @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })

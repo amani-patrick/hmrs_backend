@@ -15,17 +15,17 @@ export class AssessmentResult {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   assessmentId: string;
 
   @ManyToOne(() => Assessment)
   @JoinColumn({ name: 'assessmentId' })
   assessment: Assessment;
 
-  @Column()
+  @Column({ type: 'varchar' })
   learnerId: string;
 
   @ManyToOne(() => User)
@@ -50,7 +50,7 @@ export class AssessmentResult {
   @Column({ default: false })
   isPassed: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   timeSpent: number; // In minutes
 
   @Column({ type: 'timestamp', nullable: true })
@@ -62,7 +62,7 @@ export class AssessmentResult {
   @Column({ type: 'timestamp', nullable: true })
   gradedAt: Date | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   gradedBy: string | null;
 
   @Column({ type: 'text', nullable: true })

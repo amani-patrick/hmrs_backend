@@ -1,4 +1,4 @@
-import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
@@ -105,6 +105,13 @@ import { ManagerDashboardModule } from './modules/manager-dashboard/manager-dash
 })
 export class AppModule  implements  NestModule{
   configure(consumer: MiddlewareConsumer){
-    consumer.apply(TenancyMiddleware).forRoutes('*')
+    consumer
+      .apply(TenancyMiddleware)
+      .exclude(
+        { path: 'auth/register-tenant', method: RequestMethod.POST },
+        { path: 'auth/login', method: RequestMethod.POST },
+        { path: 'public/(.*)', method: RequestMethod.ALL },
+      )
+      .forRoutes('*')
   }
 }

@@ -68,4 +68,10 @@ export class User {
 
   @Column({ type: 'uuid', nullable: true })
   salaryGradeId: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  invitationToken: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  invitationExpiry: Date | null;
 }

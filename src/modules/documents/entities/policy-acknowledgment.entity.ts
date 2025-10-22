@@ -5,11 +5,11 @@ export class PolicyAcknowledgment {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column()
-    policyId: string;
+    @Column({ type: 'varchar' })
+  policyId: string;
 
-    @Column()
-    userId: string;
+    @Column({ type: 'uuid' })
+  userId: string;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     acknowledgedAt: Date;

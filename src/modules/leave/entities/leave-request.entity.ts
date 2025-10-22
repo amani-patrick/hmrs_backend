@@ -21,7 +21,7 @@ export class LeaveRequest {
   @JoinColumn({ name: 'employeeId' })
   employee: User;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   leaveTypeId: string | null;
 
   @ManyToOne(() => LeaveType, { nullable: true })
@@ -62,6 +62,6 @@ export class LeaveRequest {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 }

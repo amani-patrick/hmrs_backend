@@ -16,17 +16,17 @@ export class UserSkill {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column()
+  @Column({ type: 'varchar' })
   skillId: string;
 
   @ManyToOne(() => Skill)
@@ -51,7 +51,7 @@ export class UserSkill {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   endorsedBy: string | null;
 
   @Column({ default: false })

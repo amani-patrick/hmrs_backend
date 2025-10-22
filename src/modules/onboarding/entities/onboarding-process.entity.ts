@@ -21,19 +21,19 @@ export class OnboardingProcess {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   employeeId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   employeeName: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   position: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   department: string;
 
   @Column({ type: 'date' })
@@ -48,13 +48,13 @@ export class OnboardingProcess {
   @Column({ type: 'int', default: 0 })
   completionPercentage: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   assignedHR: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   assignedBuddy: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   manager: string | null;
 
   @Column({ type: 'jsonb', nullable: true })

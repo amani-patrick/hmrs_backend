@@ -21,16 +21,16 @@ export class EmailTemplate {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
   @Column({ type: 'enum', enum: TemplateType })
   templateType: TemplateType;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   subject: string;
 
   @Column({ type: 'text' })

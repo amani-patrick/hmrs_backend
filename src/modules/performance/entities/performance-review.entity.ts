@@ -35,17 +35,17 @@ export class PerformanceReview {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   employeeId: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'employeeId' })
   employee: User;
 
-  @Column()
+  @Column({ type: 'varchar' })
   reviewerId: string;
 
   @ManyToOne(() => User)

@@ -3,9 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
-import { UsersController } from './users.controller';
+import { UsersController, PublicUsersController } from './users.controller';
 import { DepartmentModule } from '../department/department.module';
 import { PayrollModule } from '../payroll/payroll.module';
+import { TenantsModule } from '../../public-modules/tenants/tenants.module';
 import { TENANT_DATA_SOURCE } from '../../tenancy/tenancy.symbols';
 
 @Module({
@@ -22,11 +23,12 @@ import { TENANT_DATA_SOURCE } from '../../tenancy/tenancy.symbols';
     },
     UsersService,
   ],
-  controllers: [UsersController],
+  controllers: [UsersController, PublicUsersController],
   imports: [
     TypeOrmModule.forFeature([User]),
     forwardRef(() => DepartmentModule),
     forwardRef(() => PayrollModule),
+    TenantsModule,
   ],
   exports: [UsersService, 'USER_REPOSITORY'],
 })

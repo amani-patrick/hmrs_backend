@@ -15,17 +15,17 @@ export class CourseModule {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   courseId: string;
 
   @ManyToOne(() => Course, course => course.modules, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'courseId' })
   course: Course;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column({ type: 'text', nullable: true })
@@ -40,7 +40,7 @@ export class CourseModule {
   @Column({ nullable: true })
   duration: number; // In minutes
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   contentUrl: string | null;
 
   @Column({ type: 'text', nullable: true })
@@ -65,6 +65,6 @@ export class CourseModule {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   createdBy: string | null;
 }

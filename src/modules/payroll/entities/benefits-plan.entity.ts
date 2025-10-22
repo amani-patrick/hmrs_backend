@@ -5,7 +5,7 @@ export class BenefitsPlan {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string; // e.g., 'Health Insurance Premium'
 
   @Column({ type: 'text' })

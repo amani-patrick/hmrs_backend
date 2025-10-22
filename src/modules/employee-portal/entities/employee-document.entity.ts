@@ -25,28 +25,28 @@ export class EmployeeDocument {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   documentName: string;
 
   @Column({ type: 'enum', enum: DocumentCategory })
   category: DocumentCategory;
 
-  @Column()
+  @Column({ type: 'varchar' })
   fileUrl: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   fileName: string;
 
-  @Column()
+  @Column({ type: 'int' })
   fileSize: number;
 
-  @Column()
+  @Column({ type: 'varchar' })
   mimeType: string;
 
   @Column({ type: 'enum', enum: DocumentStatus, default: DocumentStatus.PENDING_REVIEW })

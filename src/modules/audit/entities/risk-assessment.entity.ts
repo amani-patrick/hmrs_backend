@@ -32,10 +32,10 @@ export class RiskAssessment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column({ type: 'text' })
@@ -75,10 +75,10 @@ export class RiskAssessment {
     completedAt?: string;
   }>;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   ownerId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   departmentId: string | null;
 
   @Column({ type: 'date', nullable: true })
@@ -105,7 +105,7 @@ export class RiskAssessment {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   createdBy: string | null;
 
   @Column({ type: 'jsonb', nullable: true })

@@ -26,10 +26,10 @@ export class BenefitPlan {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name: string;
 
   @Column({ type: 'text', nullable: true })
@@ -38,7 +38,7 @@ export class BenefitPlan {
   @Column({ type: 'enum', enum: BenefitType })
   type: BenefitType;
 
-  @Column()
+  @Column({ type: 'varchar' })
   provider: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })

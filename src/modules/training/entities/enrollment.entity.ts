@@ -20,24 +20,24 @@ export class Enrollment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   learnerId: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'learnerId' })
   learner: User;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   courseId: string | null;
 
   @ManyToOne(() => Course, { nullable: true })
   @JoinColumn({ name: 'courseId' })
   course: Course | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   programId: string | null;
 
   @ManyToOne(() => TrainingProgram, { nullable: true })
@@ -68,7 +68,7 @@ export class Enrollment {
   @Column({ default: 0 })
   attempt: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   timeSpent: number | null; // In minutes
 
   @Column({ type: 'jsonb', nullable: true })
@@ -81,10 +81,10 @@ export class Enrollment {
   @Column({ default: false })
   isMandatory: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   assignedBy: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   certificateId: string | null;
 
   @Column({ type: 'text', nullable: true })

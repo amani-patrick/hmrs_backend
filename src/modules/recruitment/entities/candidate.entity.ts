@@ -17,16 +17,16 @@ export class Candidate {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   firstName: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   lastName: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   email: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   phoneNumber: string;
 
   @Column({ type: 'varchar', nullable: true })
@@ -85,7 +85,7 @@ export class Candidate {
   @Column({ type: 'jsonb', nullable: true })
   customFields: Record<string, any>;
 
-  @Column()
+  @Column({ type: 'uuid' })
   jobPostingId: string;
 
   @ManyToOne(() => JobPosting, jobPosting => jobPosting.candidates, { onDelete: 'CASCADE' })

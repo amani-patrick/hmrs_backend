@@ -33,13 +33,13 @@ export class PolicyViolation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   employeeId: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   reportedBy: string | null;
 
   @Column({ type: 'enum', enum: ViolationType })
@@ -57,7 +57,7 @@ export class PolicyViolation {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   policyReference: string | null;
 
   @Column({ type: 'text', nullable: true })
@@ -66,7 +66,7 @@ export class PolicyViolation {
   @Column({ type: 'text', nullable: true })
   action: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   investigatorId: string | null;
 
   @Column({ default: false })

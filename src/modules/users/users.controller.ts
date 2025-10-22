@@ -13,6 +13,7 @@ import {
   UsePipes, 
   ValidationPipe, 
   NotFoundException,
+  BadRequestException,
   Query,
   Res
 } from '@nestjs/common';
@@ -30,10 +31,11 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums/roles.enum';
 import { UsersService } from './users.service';
+import { TenantsService } from '../../public-modules/tenants/tenants.service';
 import { DirectoryFiltersDto } from './dto/directory-filters.dto';
 import { EmployeeDirectoryDto } from './dto/employee-directory.dto';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto, CompleteSignupDto } from './dto/create-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { EmployeeStatsResponseDto } from './dto/employee-stats-response.dto';
 import { User } from './entities/user.entity';
@@ -198,5 +200,71 @@ export class UsersController {
     if (!result) {
       throw new NotFoundException(`Employee with ID ${id} not found`);
     }
+  }
+}
+
+@ApiTags('Public - User Onboarding')
+@Controller('public/users')
+@UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+export class PublicUsersController {
+  private readonly logger = new Logger(PublicUsersController.name);
+
+  constructor(
+    private readonly tenantsService: TenantsService
+  ) {}
+
+  @Get('verify-invitation/:token')
+  @ApiOperation({ summary: 'Verify invitation token' })
+  @ApiParam({ name: 'token', description: 'Invitation token' })
+  @ApiResponse({ status: 200, description: 'Token is valid', schema: { 
+    properties: { 
+      email: { type: 'string' }, 
+      role: { type: 'string' } 
+    } 
+  }})
+  @ApiResponse({ status: 400, description: 'Token expired or invalid' })
+  @ApiResponse({ status: 404, description: 'Token not found' })
+  async verifyInvitationToken(@Param('token') token: string) {
+    this.logger.log(`Verifying invitation token`);
+    const result = await this.tenantsService.findUserByInvitationToken(token);
+    
+    if (!result) {
+      throw new NotFoundException('Invalid invitation token');
+    }
+
+    const { user } = result;
+
+    if (user.invitationExpiry && user.invitationExpiry < new Date()) {
+      throw new BadRequestException('Invitation token has expired');
+    }
+
+    if (user.isActive) {
+      throw new BadRequestException('User account is already active');
+    }
+
+    return {
+      email: user.email,
+      role: user.role,
+    };
+  }
+
+  @Post('complete-signup/:token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Complete signup for invited user' })
+  @ApiParam({ name: 'token', description: 'Invitation token' })
+  @ApiResponse({ status: 200, description: 'Signup completed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid token or data' })
+  @ApiResponse({ status: 404, description: 'Token not found' })
+  async completeSignup(
+    @Param('token') token: string,
+    @Body() completeSignupDto: CompleteSignupDto
+  ) {
+    this.logger.log(`Completing signup for invited user`);
+    const user = await this.tenantsService.completeUserSignup(token, completeSignupDto);
+    return {
+      message: 'Signup completed successfully',
+      userId: user.id,
+      email: user.email,
+    };
   }
 }

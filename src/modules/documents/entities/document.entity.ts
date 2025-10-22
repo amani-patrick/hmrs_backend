@@ -5,17 +5,17 @@ export class Document {
     @PrimaryGeneratedColumn('uuid') 
     id: string;
     
-    @Column() 
-    title: string;
+  @Column({ type: 'varchar' })
+  title: string;
     
-    @Column() 
-    fileUrl: string; // Link to cloud storage
+  @Column({ type: 'text' })
+  fileUrl: string; // Link to cloud storage
     
-    @Column({ nullable: true }) 
-    category: string;
+  @Column({ type: 'varchar', nullable: true })
+  category: string;
     
-    @Column({ default: 'Draft' }) 
-    status: string; // 'Published', 'Draft', 'Archived'
+  @Column({ type: 'varchar', default: 'Draft' })
+  status: string; // 'Published', 'Draft', 'Archived'
     
     @Column({ default: 0 }) 
     downloads: number;
@@ -32,11 +32,11 @@ export class Document {
     @Column({ default: false })
     isTemplate: boolean;
     
-    @Column({ nullable: true })
-    templateCategory: string;
+  @Column({ type: 'varchar', nullable: true })
+  templateCategory: string;
     
-    @Column()
-    createdById: string;
+  @Column({ type: 'uuid' })
+  createdById: string;
     
     @Column({ type: 'text', nullable: true })
     description: string;
@@ -44,11 +44,11 @@ export class Document {
     @Column({ nullable: true })
     fileSize: number; // in bytes
     
-    @Column({ nullable: true })
-    fileType: string; // MIME type
+  @Column({ type: 'varchar', nullable: true })
+  fileType: string; // MIME type
     
-    @Column({ default: '1.0' })
-    version: string;
+  @Column({ type: 'varchar', default: '1.0' })
+  version: string;
     
     @CreateDateColumn()
     createdAt: Date;

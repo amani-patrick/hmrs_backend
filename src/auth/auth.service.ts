@@ -1,7 +1,6 @@
 import { Injectable, BadRequestException, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { RegisterTenantDto } from './dto/register-tenant.dto';
 import { TenantsService } from '../public-modules/tenants/tenants.service';
-import { UsersService } from '../modules/users/users.service';
 import { Role } from '../common/enums/roles.enum';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -11,9 +10,7 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 export class AuthService {
   constructor(
     private readonly tenantsService: TenantsService,
-    private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
- 
   ) {}
 
   async registerTenant(dto: RegisterTenantDto) {
@@ -31,9 +28,19 @@ export class AuthService {
 
     const schemaName = 'tenant_' + dto.Name.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
+    // Calculate trial period (14 days from now)
+    const trialStartDate = new Date();
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + 14);
+
     const tenant = await this.tenantsService.create({
       name: dto.Name,
       schemaName: schemaName,
+      subscriptionPlan: dto.subscriptionPlan,
+      subscriptionStatus: 'trial',
+      trialStartDate,
+      trialEndDate,
+      billingCycle: dto.billingCycle || 'monthly',
     });
     
     try {
@@ -46,7 +53,9 @@ export class AuthService {
           password: hashedPassword,
           role: Role.ADMIN,
           isActive: true,
-          tenantId: tenant.id
+          tenantId: tenant.id,
+          firstName: dto.firstName,
+          lastName: dto.lastName
       });
       
       const payload: JwtPayload = {
@@ -61,18 +70,21 @@ export class AuthService {
       return {
         tenantId: tenant.id,
         accessToken: token,
-        message: `Tenant ${tenant.Name} provisioned successfully.`,
+        message: `Tenant ${tenant.name} provisioned successfully.`,
       };
     } catch (error) {
       // Cleanup on failure
       await this.tenantsService.deleteTenant(tenant.id);
-      throw new BadRequestException('Failed to provision tenant');
+      console.error('Tenant provisioning error:', error);
+      throw new BadRequestException(
+        `Failed to provision tenant: ${error.message || 'Unknown error'}`
+      );
     }
   }
   
 
   async login(email: string, password: string) {
-    const user = await this.usersService.findOneByEmail(email);
+    const user = await this.tenantsService.findUserByEmail(email);
     if (!user || !user.password) {
       throw new UnauthorizedException('Invalid credentials');
     }

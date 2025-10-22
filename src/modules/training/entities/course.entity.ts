@@ -27,17 +27,17 @@ export class Course {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   programId: string | null;
 
   @ManyToOne(() => TrainingProgram, program => program.courses, { nullable: true })
   @JoinColumn({ name: 'programId' })
   program: TrainingProgram | null;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column({ type: 'text', nullable: true })
@@ -58,13 +58,13 @@ export class Course {
   @Column({ type: 'jsonb', nullable: true })
   learningObjectives: string[];
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   instructorId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   instructorName: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   categoryId: string | null;
 
   @Column({ default: 0 })
@@ -82,19 +82,19 @@ export class Course {
   @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true })
   passingScore: number | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   maxAttempts: number | null;
 
   @Column({ default: false })
   hasCertificate: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   certificateTemplateId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   thumbnailUrl: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   videoUrl: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
@@ -125,10 +125,10 @@ export class Course {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   createdBy: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   updatedBy: string | null;
 
   @Column({ type: 'jsonb', nullable: true })

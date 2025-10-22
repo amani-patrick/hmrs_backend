@@ -9,24 +9,24 @@ export class KPIRecord {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   kpiId: string;
 
   @ManyToOne(() => KPI)
   @JoinColumn({ name: 'kpiId' })
   kpi: KPI;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   employeeId: string | null;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'employeeId' })
   employee: User | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   departmentId: string | null;
 
   @Column({ type: 'date' })
@@ -44,7 +44,7 @@ export class KPIRecord {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   recordedBy: string | null;
 
   @CreateDateColumn()

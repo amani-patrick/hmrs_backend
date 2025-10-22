@@ -24,17 +24,17 @@ export class Feedback {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   recipientId: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'recipientId' })
   recipient: User;
 
-  @Column()
+  @Column({ type: 'uuid' })
   giverId: string;
 
   @ManyToOne(() => User)
@@ -59,10 +59,10 @@ export class Feedback {
   @Column({ type: 'jsonb', nullable: true })
   tags: string[];
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   projectId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   reviewId: string | null;
 
   @Column({ default: false })

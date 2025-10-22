@@ -27,10 +27,10 @@ export class KPI {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name: string;
 
   @Column({ type: 'text', nullable: true })
@@ -42,13 +42,13 @@ export class KPI {
   @Column({ type: 'enum', enum: KpiStatus, default: KpiStatus.ACTIVE })
   status: KpiStatus;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   category: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   departmentId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   unit: string | null; // e.g., '%', 'units', 'hours'
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
@@ -75,7 +75,7 @@ export class KPI {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   createdBy: string | null;
 
   @Column({ type: 'jsonb', nullable: true })

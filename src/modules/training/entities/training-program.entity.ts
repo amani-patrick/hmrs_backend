@@ -23,10 +23,10 @@ export class TrainingProgram {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column({ type: 'text', nullable: true })
@@ -53,16 +53,16 @@ export class TrainingProgram {
   @Column({ type: 'date', nullable: true })
   endDate: Date | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   instructorId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   instructorName: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   categoryId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   categoryName: string | null;
 
   @Column({ default: 0 })
@@ -83,10 +83,10 @@ export class TrainingProgram {
   @Column({ default: false })
   isRecurring: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   recurringInterval: string | null; // e.g., "yearly", "quarterly"
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   thumbnailUrl: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
@@ -95,7 +95,7 @@ export class TrainingProgram {
   @Column({ type: 'jsonb', nullable: true })
   prerequisites: string[];
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   certificateTemplateId: string | null;
 
   @Column({ default: true })
@@ -110,10 +110,10 @@ export class TrainingProgram {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   createdBy: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   updatedBy: string | null;
 
   @Column({ type: 'jsonb', nullable: true })

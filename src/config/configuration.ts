@@ -7,7 +7,7 @@ export default () => ({
       password: process.env.DB_PASSWORD || 'postgres',
       name: process.env.DB_NAME || 'hrms_db',
       public_schema: process.env.DB_PUBLIC_SCHEMA || 'public',
-      synchronize: process.env.DB_SYNCHRONIZE === 'true' || false,
+      synchronize: process.env.DB_SYNCHRONIZE === 'true',
       logging: process.env.DB_LOGGING === 'true' || false,
       ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
     },

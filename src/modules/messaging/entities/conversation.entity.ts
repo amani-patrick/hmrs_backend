@@ -12,7 +12,7 @@ export class Conversation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })

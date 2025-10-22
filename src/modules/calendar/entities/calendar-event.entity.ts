@@ -19,10 +19,10 @@ export class CalendarEvent {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column('text', { nullable: true })
@@ -34,31 +34,31 @@ export class CalendarEvent {
   @Column({ type: 'timestamp' })
   endTime: Date;
 
-  @Column({ default: 'meeting' })
+  @Column({ type: 'varchar', default: 'meeting' })
   type: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   location?: string;
 
   @Column({ type: 'enum', enum: EventStatus, default: EventStatus.SCHEDULED })
   status: EventStatus;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   relatedEntityId?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   relatedEntityType?: string;
 
   @Column('jsonb', { default: [] })
   attendees: CalendarEventAttendee[];
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   timeZone?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   recurrence?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   colorId?: string;
 
   @Column({ default: false })

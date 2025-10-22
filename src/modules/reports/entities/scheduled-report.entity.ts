@@ -21,17 +21,17 @@ export class ScheduledReport {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   templateId: string;
 
   @ManyToOne(() => ReportTemplate)
   @JoinColumn({ name: 'templateId' })
   template: ReportTemplate;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name: string;
 
   @Column({ type: 'enum', enum: ScheduleFrequency })

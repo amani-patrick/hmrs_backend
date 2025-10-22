@@ -112,6 +112,7 @@ export class JobPosting {
   @UpdateDateColumn({ type: 'timestamp with time zone' })
   updatedAt: Date;
 
+  @Column({ type: 'uuid', nullable: true })
   createdById: string | null;
 
   @ManyToOne(() => User, { onDelete: 'SET NULL' })

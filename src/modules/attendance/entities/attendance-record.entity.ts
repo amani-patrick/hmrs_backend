@@ -26,10 +26,10 @@ export class AttendanceRecord {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   employeeId: string;
 
   @Column({ type: 'date' })
@@ -83,7 +83,7 @@ export class AttendanceRecord {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   approvedBy: string | null;
 
   @Column({ type: 'timestamp', nullable: true })

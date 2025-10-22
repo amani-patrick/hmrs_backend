@@ -13,13 +13,13 @@ export class BenefitEnrollment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   employeeId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   benefitPlanId: string;
 
   @Column({ type: 'enum', enum: EnrollmentStatus, default: EnrollmentStatus.PENDING })
@@ -31,7 +31,7 @@ export class BenefitEnrollment {
   @Column({ type: 'date', nullable: true })
   endDate: Date | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   coverageLevel: string | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
@@ -44,7 +44,7 @@ export class BenefitEnrollment {
     dateOfBirth: string;
   }[];
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   approvedBy: string | null;
 
   @Column({ type: 'timestamp', nullable: true })

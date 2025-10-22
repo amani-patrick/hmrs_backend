@@ -6,13 +6,13 @@ export class LeaveBalance {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   tenantId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   employeeId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   leaveTypeId: string;
 
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
