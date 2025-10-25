@@ -105,15 +105,92 @@ export class AuthService {
       email: user.email
     };
 
-    const token = await this.jwtService.signAsync(payload);
+    const accessToken = await this.jwtService.signAsync(payload);
+    const refreshToken = await this.jwtService.signAsync(
+      { userId: user.id, type: 'refresh' },
+      { expiresIn: '7d' }
+    );
+
     return { 
-      accessToken: token,
+      access_token: accessToken,
+      refresh_token: refreshToken,
       user: {
         id: user.id,
         email: user.email,
         role: user.role,
-        isActive: user.isActive
+        isActive: user.isActive,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        tenantId: user.tenantId
       }
+    };
+  }
+
+  async getMe(userId: string, tenantId: string) {
+    const user = await this.tenantsService.findUserById(userId, tenantId);
+    
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      position: user.position,
+      phoneNumber: user.phoneNumber,
+      location: user.location,
+      tenantId: user.tenantId
+    };
+  }
+
+  async refreshToken(refreshToken: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshToken);
+      
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      // Get user to verify they still exist and are active
+      const user = await this.tenantsService.findUserById(payload.userId, payload.tenantId);
+      
+      if (!user || !user.isActive) {
+        throw new UnauthorizedException('User not found or inactive');
+      }
+      
+      // Generate new access token with fresh user data
+      const newPayload: JwtPayload = {
+        userId: user.id,
+        tenantId: user.tenantId || '',
+        role: user.role,
+        email: user.email
+      };
+
+      const accessToken = await this.jwtService.signAsync(newPayload);
+      const newRefreshToken = await this.jwtService.signAsync(
+        { userId: user.id, tenantId: user.tenantId, type: 'refresh' },
+        { expiresIn: '7d' }
+      );
+
+      return {
+        access_token: accessToken,
+        refresh_token: newRefreshToken
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+  }
+
+  async logout(userId: string) {
+    // In a production app, you'd invalidate the refresh token here
+    // For now, we'll just return success
+    // You could store refresh tokens in Redis or database and delete them here
+    return {
+      message: 'Logged out successfully'
     };
   }
 }

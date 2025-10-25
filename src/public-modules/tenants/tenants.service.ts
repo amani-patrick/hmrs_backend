@@ -82,6 +82,37 @@ export class TenantsService {
     }
   }
 
+  async findUserById(userId: string, tenantId: string): Promise<User | null> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    
+    try {
+      // Find tenant to get schema name
+      const tenant = await this.tenantRepository.findOne({ where: { id: tenantId } });
+      if (!tenant) {
+        return null;
+      }
+
+      // Set search path to tenant schema
+      await queryRunner.query(`SET search_path TO "${tenant.schemaName}"`);
+      
+      const user = await queryRunner.manager
+        .getRepository(User)
+        .findOne({ 
+          where: { id: userId },
+          select: ['id', 'email', 'role', 'isActive', 'tenantId', 'firstName', 'lastName', 'position', 'phoneNumber', 'location']
+        });
+      
+      await queryRunner.query(`SET search_path TO public`);
+      return user;
+    } catch (error) {
+      await queryRunner.query(`SET search_path TO public`);
+      return null;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async deleteTenant(id: string): Promise<void> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();

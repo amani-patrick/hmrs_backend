@@ -62,6 +62,13 @@ export class User {
   @Column({ type: 'uuid', nullable: true })
   departmentId: string | null;
 
+  @Column({ type: 'uuid', nullable: true })
+  managerId: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'managerId' })
+  manager: User | null;
+
   @ManyToOne(() => SalaryGrade, { nullable: true, eager: false })
   @JoinColumn({ name: 'salaryGradeId' })
   salaryGrade: SalaryGrade | null;

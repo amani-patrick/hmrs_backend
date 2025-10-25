@@ -8,6 +8,6 @@ import { performanceProviders } from './performance.providers';
   imports: [DatabaseModule],
   controllers: [PerformanceController],
   providers: [PerformanceService, ...performanceProviders],
-  exports: [PerformanceService],
+  exports: [PerformanceService, 'PERFORMANCE_REVIEW_REPOSITORY', 'GOAL_REPOSITORY'],
 })
 export class PerformanceModule {}

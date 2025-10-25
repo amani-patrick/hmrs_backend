@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { Repository, Between, MoreThanOrEqual, LessThanOrEqual, In } from 'typeorm';
 import { DashboardWidget } from './entities/dashboard-widget.entity';
-import { AnalyticsQueryDto, TimeRange } from './dto/analytics-query.dto';
+import { AnalyticsQueryDto, TimeRange, GroupBy } from './dto/analytics-query.dto';
 
 interface DateRange {
   start: Date;
@@ -9,10 +9,20 @@ interface DateRange {
 }
 
 @Injectable()
-export class AnalyticsService {
+export class AnalyticsRealService {
   constructor(
     @Inject('DASHBOARD_WIDGET_REPOSITORY')
     private readonly widgetRepository: Repository<DashboardWidget>,
+    @Inject('USER_REPOSITORY')
+    private readonly userRepository: Repository<any>,
+    @Inject('LEAVE_REPOSITORY')
+    private readonly leaveRepository: Repository<any>,
+    @Inject('ATTENDANCE_REPOSITORY')
+    private readonly attendanceRepository: Repository<any>,
+    @Inject('ONBOARDING_REPOSITORY')
+    private readonly onboardingRepository: Repository<any>,
+    @Inject('OFFBOARDING_REPOSITORY')
+    private readonly offboardingRepository: Repository<any>,
   ) {}
 
   // ==================== HEADCOUNT ANALYTICS ====================
@@ -20,25 +30,46 @@ export class AnalyticsService {
   async getHeadcountMetrics(tenantId: string, query: AnalyticsQueryDto) {
     const dateRange = this.getDateRange(query);
     
-    // TODO: Integrate with actual employee repository
+    // Get current active employees
+    const currentEmployees = await this.userRepository.find({
+      where: { 
+        tenantId,
+        isActive: true,
+      },
+    });
+
+    // Get previous period for comparison
+    const previousRange = this.getPreviousPeriodRange(dateRange);
+    const previousEmployees = await this.userRepository.find({
+      where: {
+        tenantId,
+        isActive: true,
+        createdAt: LessThanOrEqual(previousRange.end),
+      },
+    });
+
+    const current = currentEmployees.length;
+    const previous = previousEmployees.length;
+    const change = current - previous;
+    const changePercent = previous > 0 ? ((change / previous) * 100) : 0;
+
+    // Group by department
+    const byDepartment = await this.groupByField(currentEmployees, 'department', previousEmployees);
+    
+    // Group by position
+    const byPosition = await this.groupByField(currentEmployees, 'position', previousEmployees);
+
+    // Generate trend data
+    const trend = await this.generateHeadcountTrend(tenantId, dateRange, query.groupBy);
+
     return {
-      current: 150,
-      previousPeriod: 145,
-      change: 5,
-      changePercent: 3.45,
-      byDepartment: [
-        { department: 'Engineering', count: 50, change: 2 },
-        { department: 'Sales', count: 40, change: 3 },
-        { department: 'HR', count: 15, change: 0 },
-        { department: 'Finance', count: 20, change: 0 },
-        { department: 'Operations', count: 25, change: 0 },
-      ],
-      byPosition: [
-        { position: 'Software Engineer', count: 35, change: 2 },
-        { position: 'Sales Representative', count: 30, change: 3 },
-        { position: 'Manager', count: 20, change: 0 },
-      ],
-      trend: this.generateTrendData(dateRange, 'headcount'),
+      current,
+      previousPeriod: previous,
+      change,
+      changePercent: Math.round(changePercent * 100) / 100,
+      byDepartment,
+      byPosition,
+      trend,
     };
   }
 
@@ -47,34 +78,58 @@ export class AnalyticsService {
   async getTurnoverMetrics(tenantId: string, query: AnalyticsQueryDto) {
     const dateRange = this.getDateRange(query);
     
-    return {
-      turnoverRate: 12.5, // percentage
-      voluntaryTurnover: 8.5,
-      involuntaryTurnover: 4.0,
-      retentionRate: 87.5,
-      newHires: 15,
-      terminations: 10,
-      byDepartment: [
-        { department: 'Sales', turnoverRate: 18.0, terminations: 5 },
-        { department: 'Engineering', turnoverRate: 8.0, terminations: 3 },
-        { department: 'Operations', turnoverRate: 12.0, terminations: 2 },
-      ],
-      reasonsForLeaving: [
-        { reason: 'Better Opportunity', count: 4 },
-        { reason: 'Relocation', count: 2 },
-        { reason: 'Career Change', count: 1 },
-        { reason: 'Retirement', count: 1 },
-        { reason: 'Performance', count: 2 },
-      ],
-      averageTenure: {
-        overall: 3.2, // years
-        byDepartment: [
-          { department: 'Engineering', tenure: 3.8 },
-          { department: 'Sales', tenure: 2.5 },
-          { department: 'HR', tenure: 4.5 },
-        ],
+    // Get terminations in period
+    const offboardings = await this.offboardingRepository.find({
+      where: {
+        tenantId,
+        lastWorkingDay: Between(dateRange.start, dateRange.end),
       },
-      trend: this.generateTrendData(dateRange, 'turnover'),
+    });
+
+    // Get new hires in period
+    const onboardings = await this.onboardingRepository.find({
+      where: {
+        tenantId,
+        startDate: Between(dateRange.start, dateRange.end),
+      },
+    });
+
+    // Get total active employees
+    const totalEmployees = await this.userRepository.count({
+      where: { tenantId, isActive: true },
+    });
+
+    const terminations = offboardings.length;
+    const newHires = onboardings.length;
+    const turnoverRate = totalEmployees > 0 ? (terminations / totalEmployees) * 100 : 0;
+    const retentionRate = 100 - turnoverRate;
+
+    // Separate voluntary vs involuntary
+    const voluntary = offboardings.filter(o => o.reason !== 'terminated' && o.reason !== 'performance').length;
+    const involuntary = terminations - voluntary;
+    const voluntaryTurnover = totalEmployees > 0 ? (voluntary / totalEmployees) * 100 : 0;
+    const involuntaryTurnover = totalEmployees > 0 ? (involuntary / totalEmployees) * 100 : 0;
+
+    // Group by department
+    const byDepartment = await this.getTurnoverByDepartment(tenantId, dateRange, offboardings);
+
+    // Reasons for leaving
+    const reasonsForLeaving = this.groupByReason(offboardings);
+
+    // Average tenure
+    const averageTenure = await this.calculateAverageTenure(tenantId, offboardings);
+
+    return {
+      turnoverRate: Math.round(turnoverRate * 100) / 100,
+      voluntaryTurnover: Math.round(voluntaryTurnover * 100) / 100,
+      involuntaryTurnover: Math.round(involuntaryTurnover * 100) / 100,
+      retentionRate: Math.round(retentionRate * 100) / 100,
+      newHires,
+      terminations,
+      byDepartment,
+      reasonsForLeaving,
+      averageTenure,
+      trend: await this.generateTurnoverTrend(tenantId, dateRange),
     };
   }
 
@@ -83,30 +138,48 @@ export class AnalyticsService {
   async getAttendanceMetrics(tenantId: string, query: AnalyticsQueryDto) {
     const dateRange = this.getDateRange(query);
     
+    // Get all attendance records in range
+    const attendanceRecords = await this.attendanceRepository.find({
+      where: {
+        tenantId,
+        date: Between(dateRange.start, dateRange.end),
+      },
+    });
+
+    const totalRecords = attendanceRecords.length;
+    const presentRecords = attendanceRecords.filter(a => a.status === 'present' || a.status === 'late').length;
+    const absentRecords = attendanceRecords.filter(a => a.status === 'absent').length;
+    const lateRecords = attendanceRecords.filter(a => a.status === 'late').length;
+
+    const attendanceRate = totalRecords > 0 ? (presentRecords / totalRecords) * 100 : 0;
+
+    // Calculate work days
+    const workDays = this.calculateWorkDays(dateRange);
+
+    // Calculate average hours and overtime
+    const totalHours = attendanceRecords.reduce((sum, a) => sum + (a.totalHours || 0), 0);
+    const overtimeHours = attendanceRecords.reduce((sum, a) => sum + (a.overtimeHours || 0), 0);
+    const averageHoursPerDay = totalRecords > 0 ? totalHours / totalRecords : 0;
+
+    // Group by department
+    const byDepartment = await this.getAttendanceByDepartment(tenantId, dateRange, attendanceRecords);
+
     return {
-      averageAttendanceRate: 96.5, // percentage
-      totalWorkDays: 22,
-      totalAbsences: 45,
-      averageHoursPerDay: 8.2,
-      overtimeHours: 120,
-      byDepartment: [
-        { department: 'Engineering', attendanceRate: 97.5, absences: 8 },
-        { department: 'Sales', attendanceRate: 95.0, absences: 15 },
-        { department: 'Operations', attendanceRate: 98.0, absences: 5 },
-      ],
+      averageAttendanceRate: Math.round(attendanceRate * 100) / 100,
+      totalWorkDays: workDays,
+      totalAbsences: absentRecords,
+      averageHoursPerDay: Math.round(averageHoursPerDay * 100) / 100,
+      overtimeHours,
+      byDepartment,
       lateArrivals: {
-        total: 28,
-        byDepartment: [
-          { department: 'Engineering', count: 10 },
-          { department: 'Sales', count: 12 },
-          { department: 'Operations', count: 6 },
-        ],
+        total: lateRecords,
+        byDepartment: await this.getLateArrivalsByDepartment(tenantId, dateRange),
       },
       earlyDepartures: {
-        total: 15,
-        average: 0.68, // per employee
+        total: attendanceRecords.filter(a => a.earlyDeparture).length,
+        average: attendanceRecords.filter(a => a.earlyDeparture).reduce((sum, a) => sum + (a.earlyDepartureHours || 0), 0) / attendanceRecords.filter(a => a.earlyDeparture).length,
       },
-      trend: this.generateTrendData(dateRange, 'attendance'),
+      trend: await this.generateAttendanceTrend(tenantId, dateRange),
     };
   }
 
@@ -115,32 +188,41 @@ export class AnalyticsService {
   async getLeaveMetrics(tenantId: string, query: AnalyticsQueryDto) {
     const dateRange = this.getDateRange(query);
     
+    // Get leave requests in range
+    const leaveRequests = await this.leaveRepository.find({
+      where: {
+        tenantId,
+        startDate: Between(dateRange.start, dateRange.end),
+      },
+    });
+
+    const totalRequests = leaveRequests.length;
+    const approved = leaveRequests.filter(l => l.status === 'approved').length;
+    const pending = leaveRequests.filter(l => l.status === 'pending').length;
+    const rejected = leaveRequests.filter(l => l.status === 'rejected').length;
+    const approvalRate = totalRequests > 0 ? (approved / totalRequests) * 100 : 0;
+
+    // Group by leave type
+    const byLeaveType = this.groupLeavesByType(leaveRequests);
+
+    // Group by department
+    const byDepartment = await this.getLeaveByDepartment(tenantId, dateRange, leaveRequests);
+
+    // Peak months (would need year-long data)
+    const peakMonths = await this.getLeaveByMonth(tenantId, leaveRequests);
+
     return {
-      totalLeaveRequests: 85,
-      approvedLeaves: 78,
-      pendingLeaves: 5,
-      rejectedLeaves: 2,
-      approvalRate: 91.8,
-      byLeaveType: [
-        { type: 'Annual Leave', count: 45, days: 180 },
-        { type: 'Sick Leave', count: 25, days: 60 },
-        { type: 'Personal Leave', count: 10, days: 25 },
-        { type: 'Maternity Leave', count: 3, days: 270 },
-        { type: 'Unpaid Leave', count: 2, days: 15 },
-      ],
-      byDepartment: [
-        { department: 'Engineering', requests: 30, avgDays: 5.5 },
-        { department: 'Sales', requests: 28, avgDays: 4.8 },
-        { department: 'Operations', requests: 15, avgDays: 5.2 },
-      ],
-      peakMonths: [
-        { month: 'December', count: 35 },
-        { month: 'July', count: 28 },
-        { month: 'April', count: 22 },
-      ],
-      averageLeaveBalance: 12.5, // days
-      utilizationRate: 68.5, // percentage
-      trend: this.generateTrendData(dateRange, 'leave'),
+      totalLeaveRequests: totalRequests,
+      approvedLeaves: approved,
+      pendingLeaves: pending,
+      rejectedLeaves: rejected,
+      approvalRate: Math.round(approvalRate * 100) / 100,
+      byLeaveType,
+      byDepartment,
+      peakMonths,
+      averageLeaveBalance: 12.5, // Would calculate from actual balance data
+      utilizationRate: 68.5, // Would calculate from balance vs used
+      trend: await this.generateLeaveTrend(tenantId, dateRange),
     };
   }
 
@@ -149,6 +231,7 @@ export class AnalyticsService {
   async getPerformanceMetrics(tenantId: string, query: AnalyticsQueryDto) {
     const dateRange = this.getDateRange(query);
     
+    // Mock implementation for now - would integrate with performance module
     return {
       averageRating: 3.8,
       totalReviews: 120,
@@ -162,11 +245,7 @@ export class AnalyticsService {
         { rating: 2, count: 5, percentage: 4.4 },
         { rating: 1, count: 0, percentage: 0 },
       ],
-      byDepartment: [
-        { department: 'Engineering', avgRating: 4.0, reviews: 50 },
-        { department: 'Sales', avgRating: 3.7, reviews: 40 },
-        { department: 'Operations', avgRating: 3.6, reviews: 25 },
-      ],
+      byDepartment: [],
       goalCompletion: {
         total: 450,
         completed: 380,
@@ -174,12 +253,8 @@ export class AnalyticsService {
         notStarted: 20,
         completionRate: 84.4,
       },
-      topPerformers: [
-        { employeeId: '1', name: 'John Doe', rating: 4.9, department: 'Engineering' },
-        { employeeId: '2', name: 'Jane Smith', rating: 4.8, department: 'Sales' },
-        { employeeId: '3', name: 'Bob Johnson', rating: 4.7, department: 'Operations' },
-      ],
-      trend: this.generateTrendData(dateRange, 'performance'),
+      topPerformers: [],
+      trend: [],
     };
   }
 
@@ -188,6 +263,7 @@ export class AnalyticsService {
   async getTrainingMetrics(tenantId: string, query: AnalyticsQueryDto) {
     const dateRange = this.getDateRange(query);
     
+    // Mock implementation for now - would integrate with training module
     return {
       totalPrograms: 45,
       activePrograms: 30,
@@ -195,17 +271,8 @@ export class AnalyticsService {
       completedEnrollments: 380,
       completionRate: 73.1,
       averageScore: 85.5,
-      byCategory: [
-        { category: 'Technical Skills', programs: 15, enrollments: 200, completion: 78.0 },
-        { category: 'Soft Skills', programs: 12, enrollments: 150, completion: 82.0 },
-        { category: 'Compliance', programs: 10, enrollments: 120, completion: 95.0 },
-        { category: 'Leadership', programs: 8, enrollments: 50, completion: 72.0 },
-      ],
-      byDepartment: [
-        { department: 'Engineering', enrollments: 180, avgScore: 88.0 },
-        { department: 'Sales', enrollments: 150, avgScore: 84.0 },
-        { department: 'Operations', enrollments: 100, avgScore: 86.0 },
-      ],
+      byCategory: [],
+      byDepartment: [],
       certificationsEarned: 85,
       trainingHours: 2400,
       averageHoursPerEmployee: 16,
@@ -214,7 +281,7 @@ export class AnalyticsService {
         estimatedValue: 150000,
         roiPercentage: 200,
       },
-      trend: this.generateTrendData(dateRange, 'training'),
+      trend: [],
     };
   }
 
@@ -223,6 +290,7 @@ export class AnalyticsService {
   async getPayrollMetrics(tenantId: string, query: AnalyticsQueryDto) {
     const dateRange = this.getDateRange(query);
     
+    // Mock implementation for now - would integrate with payroll module
     return {
       totalPayrollExpense: 1250000,
       averageSalary: 8333,
@@ -230,24 +298,12 @@ export class AnalyticsService {
       totalBonuses: 125000,
       totalDeductions: 187500,
       netPayroll: 1187500,
-      byDepartment: [
-        { department: 'Engineering', expense: 450000, employees: 50, avgSalary: 9000 },
-        { department: 'Sales', expense: 380000, employees: 40, avgSalary: 9500 },
-        { department: 'Operations', expense: 200000, employees: 25, avgSalary: 8000 },
-        { department: 'HR', expense: 120000, employees: 15, avgSalary: 8000 },
-        { department: 'Finance', expense: 100000, employees: 20, avgSalary: 5000 },
-      ],
-      salaryBands: [
-        { range: '$0-25K', count: 20, percentage: 13.3 },
-        { range: '$25K-50K', count: 60, percentage: 40.0 },
-        { range: '$50K-75K', count: 45, percentage: 30.0 },
-        { range: '$75K-100K', count: 20, percentage: 13.3 },
-        { range: '$100K+', count: 5, percentage: 3.4 },
-      ],
+      byDepartment: [],
+      salaryBands: [],
       overtimeCost: 35000,
       benefitsCost: 187500,
       taxWithheld: 250000,
-      trend: this.generateTrendData(dateRange, 'payroll'),
+      trend: [],
     };
   }
 
@@ -256,6 +312,7 @@ export class AnalyticsService {
   async getRecruitmentMetrics(tenantId: string, query: AnalyticsQueryDto) {
     const dateRange = this.getDateRange(query);
     
+    // Mock implementation for now - would integrate with recruitment module
     return {
       totalApplications: 450,
       openPositions: 25,
@@ -264,83 +321,84 @@ export class AnalyticsService {
       rejections: 320,
       inProgress: 118,
       timeToHire: {
-        average: 32, // days
+        average: 32,
         median: 28,
-        byDepartment: [
-          { department: 'Engineering', days: 38 },
-          { department: 'Sales', days: 25 },
-          { department: 'Operations', days: 30 },
-        ],
+        byDepartment: [],
       },
       costPerHire: {
         average: 4200,
         total: 50400,
       },
-      sourceEffectiveness: [
-        { source: 'LinkedIn', applications: 180, hires: 5, costPerHire: 5000 },
-        { source: 'Indeed', applications: 120, hires: 3, costPerHire: 3500 },
-        { source: 'Referrals', applications: 80, hires: 4, costPerHire: 2000 },
-        { source: 'Company Website', applications: 70, hires: 0, costPerHire: 0 },
-      ],
+      sourceEffectiveness: [],
       conversionRates: {
         applicationToInterview: 26.2,
         interviewToOffer: 15.3,
         offerToHire: 80.0,
       },
       offerAcceptanceRate: 80.0,
-      trend: this.generateTrendData(dateRange, 'recruitment'),
-    };
-  }
-
-  // ==================== COMPARATIVE ANALYTICS ====================
-
-  async getComparativeAnalytics(tenantId: string, query: AnalyticsQueryDto) {
-    return {
-      yearOverYear: {
-        headcount: { current: 150, previous: 140, change: 7.1 },
-        turnoverRate: { current: 12.5, previous: 15.0, change: -16.7 },
-        avgSalary: { current: 8333, previous: 7850, change: 6.2 },
-        trainingHours: { current: 2400, previous: 2100, change: 14.3 },
-      },
-      monthOverMonth: {
-        newHires: { current: 5, previous: 8, change: -37.5 },
-        absences: { current: 45, previous: 52, change: -13.5 },
-        overtimeHours: { current: 120, previous: 135, change: -11.1 },
-      },
-      benchmarks: {
-        turnoverRate: { company: 12.5, industry: 15.0, difference: -2.5 },
-        attendanceRate: { company: 96.5, industry: 94.0, difference: 2.5 },
-        trainingHours: { company: 16, industry: 12, difference: 4 },
-      },
+      trend: [],
     };
   }
 
   // ==================== PREDICTIVE ANALYTICS ====================
 
   async getPredictiveAnalytics(tenantId: string) {
+    // Mock implementation for now - would use ML models
     return {
-      attritionRisk: [
-        { employeeId: '1', name: 'Employee A', risk: 0.78, factors: ['Low engagement', 'No promotion'] },
-        { employeeId: '2', name: 'Employee B', risk: 0.65, factors: ['High overtime', 'Low satisfaction'] },
-      ],
+      attritionRisk: [],
       hiringNeeds: {
         next30Days: 5,
         next60Days: 10,
         next90Days: 15,
-        byDepartment: [
-          { department: 'Engineering', positions: 6 },
-          { department: 'Sales', positions: 4 },
-        ],
+        byDepartment: [],
       },
       budgetForecast: {
         nextQuarter: 3850000,
         nextYear: 15800000,
-        breakdown: [
-          { category: 'Salaries', amount: 12000000 },
-          { category: 'Benefits', amount: 2400000 },
-          { category: 'Training', amount: 600000 },
-          { category: 'Recruitment', amount: 800000 },
-        ],
+        breakdown: [],
+      },
+    };
+  }
+
+  // ==================== COMPARATIVE ANALYTICS ====================
+
+  async getComparativeAnalytics(tenantId: string, query: AnalyticsQueryDto) {
+    const currentRange = this.getDateRange(query);
+    const previousRange = this.getPreviousPeriodRange(currentRange);
+
+    // Get metrics for both periods
+    const currentHeadcount = await this.userRepository.count({
+      where: { tenantId, isActive: true },
+    });
+
+    const previousHeadcount = await this.userRepository.count({
+      where: {
+        tenantId,
+        createdAt: LessThanOrEqual(previousRange.end),
+      },
+    });
+
+    // Calculate changes
+    const headcountChange = currentHeadcount - previousHeadcount;
+    const headcountChangePercent = previousHeadcount > 0 ? (headcountChange / previousHeadcount) * 100 : 0;
+
+    return {
+      yearOverYear: {
+        headcount: {
+          current: currentHeadcount,
+          previous: previousHeadcount,
+          change: Math.round(headcountChangePercent * 100) / 100,
+        },
+        // Add other YoY metrics here
+      },
+      monthOverMonth: {
+        // Add MoM metrics
+      },
+      benchmarks: {
+        // Industry benchmarks (would come from external data)
+        turnoverRate: { company: 12.5, industry: 15.0, difference: -2.5 },
+        attendanceRate: { company: 96.5, industry: 94.0, difference: 2.5 },
+        trainingHours: { company: 16, industry: 12, difference: 4 },
       },
     };
   }
@@ -373,13 +431,6 @@ export class AnalyticsService {
         start = new Date(now.setDate(now.getDate() - now.getDay()));
         start.setHours(0, 0, 0, 0);
         break;
-      case TimeRange.LAST_WEEK:
-        start = new Date(now.setDate(now.getDate() - now.getDay() - 7));
-        start.setHours(0, 0, 0, 0);
-        end = new Date(start);
-        end.setDate(end.getDate() + 6);
-        end.setHours(23, 59, 59, 999);
-        break;
       case TimeRange.THIS_MONTH:
         start = new Date(now.getFullYear(), now.getMonth(), 1);
         break;
@@ -387,16 +438,8 @@ export class AnalyticsService {
         start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         end = new Date(now.getFullYear(), now.getMonth(), 0);
         break;
-      case TimeRange.THIS_QUARTER:
-        const quarter = Math.floor(now.getMonth() / 3);
-        start = new Date(now.getFullYear(), quarter * 3, 1);
-        break;
       case TimeRange.THIS_YEAR:
         start = new Date(now.getFullYear(), 0, 1);
-        break;
-      case TimeRange.LAST_YEAR:
-        start = new Date(now.getFullYear() - 1, 0, 1);
-        end = new Date(now.getFullYear() - 1, 11, 31);
         break;
       default:
         start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -405,22 +448,203 @@ export class AnalyticsService {
     return { start, end };
   }
 
-  private generateTrendData(dateRange: DateRange, metric: string): any[] {
-    // Mock trend data generation
-    const days = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
-    const points = Math.min(days, 30);
-    const trend: Array<{ date: string; value: number }> = [];
+  private getPreviousPeriodRange(currentRange: DateRange): DateRange {
+    const duration = currentRange.end.getTime() - currentRange.start.getTime();
+    const start = new Date(currentRange.start.getTime() - duration);
+    const end = new Date(currentRange.end.getTime() - duration);
+    return { start, end };
+  }
 
-    for (let i = 0; i < points; i++) {
-      const date = new Date(dateRange.start);
-      date.setDate(date.getDate() + Math.floor((i / points) * days));
-      
-      trend.push({
-        date: date.toISOString().split('T')[0],
-        value: Math.floor(Math.random() * 100) + 50,
-      });
+  private async groupByField(current: any[], field: string, previous: any[]): Promise<any[]> {
+    const groups: any = {};
+    
+    // Count current
+    current.forEach(item => {
+      const key = item[field] || 'Unknown';
+      if (!groups[key]) groups[key] = { current: 0, previous: 0 };
+      groups[key].current++;
+    });
+
+    // Count previous
+    previous.forEach(item => {
+      const key = item[field] || 'Unknown';
+      if (!groups[key]) groups[key] = { current: 0, previous: 0 };
+      groups[key].previous++;
+    });
+
+    // Convert to array
+    return Object.keys(groups).map(key => ({
+      [field]: key,
+      count: groups[key].current,
+      change: groups[key].current - groups[key].previous,
+    }));
+  }
+
+  private async generateHeadcountTrend(tenantId: string, dateRange: DateRange, groupBy?: GroupBy): Promise<any[]> {
+    // Would implement actual trend calculation based on groupBy
+    // For now, return basic structure
+    return [];
+  }
+
+  private async getTurnoverByDepartment(tenantId: string, dateRange: DateRange, offboardings: any[]): Promise<any[]> {
+    const departments = await this.userRepository
+      .createQueryBuilder('user')
+      .select('user.department', 'department')
+      .addSelect('COUNT(*)', 'total')
+      .where('user.tenantId = :tenantId', { tenantId })
+      .andWhere('user.isActive = :isActive', { isActive: true })
+      .groupBy('user.department')
+      .getRawMany();
+
+    return departments.map(dept => {
+      const terminations = offboardings.filter(o => o.department === dept.department).length;
+      const turnoverRate = dept.total > 0 ? (terminations / dept.total) * 100 : 0;
+      return {
+        department: dept.department,
+        turnoverRate: Math.round(turnoverRate * 100) / 100,
+        terminations,
+      };
+    });
+  }
+
+  private groupByReason(offboardings: any[]): any[] {
+    const reasons: any = {};
+    offboardings.forEach(o => {
+      const reason = o.reason || 'Not specified';
+      reasons[reason] = (reasons[reason] || 0) + 1;
+    });
+
+    return Object.keys(reasons).map(reason => ({
+      reason,
+      count: reasons[reason],
+    })).sort((a, b) => b.count - a.count);
+  }
+
+  private async calculateAverageTenure(tenantId: string, offboardings: any[]): Promise<any> {
+    const tenures = offboardings.map(o => {
+      const start = new Date(o.startDate || o.createdAt);
+      const end = new Date(o.lastWorkingDay);
+      const years = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365);
+      return years;
+    });
+
+    const avgTenure = tenures.length > 0 ? tenures.reduce((sum, t) => sum + t, 0) / tenures.length : 0;
+
+    return {
+      overall: Math.round(avgTenure * 10) / 10,
+      byDepartment: [], // Would calculate by department
+    };
+  }
+
+  private async getAttendanceByDepartment(tenantId: string, dateRange: DateRange, records: any[]): Promise<any[]> {
+    // Group attendance by department
+    const departments = [...new Set(records.map(r => r.department))];
+    
+    return departments.map(dept => {
+      const deptRecords = records.filter(r => r.department === dept);
+      const present = deptRecords.filter(r => r.status === 'present' || r.status === 'late').length;
+      const attendanceRate = deptRecords.length > 0 ? (present / deptRecords.length) * 100 : 0;
+      const absences = deptRecords.filter(r => r.status === 'absent').length;
+
+      return {
+        department: dept,
+        attendanceRate: Math.round(attendanceRate * 100) / 100,
+        absences,
+      };
+    });
+  }
+
+  private async getLateArrivalsByDepartment(tenantId: string, dateRange: DateRange): Promise<any[]> {
+    const lateRecords = await this.attendanceRepository.find({
+      where: {
+        tenantId,
+        date: Between(dateRange.start, dateRange.end),
+        status: 'late',
+      },
+    });
+
+    const departments = [...new Set(lateRecords.map(r => r.department))];
+    
+    return departments.map(dept => ({
+      department: dept,
+      count: lateRecords.filter(r => r.department === dept).length,
+    }));
+  }
+
+  private groupLeavesByType(leaves: any[]): any[] {
+    const types: any = {};
+    leaves.forEach(leave => {
+      const type = leave.leaveType || 'Unknown';
+      if (!types[type]) {
+        types[type] = { count: 0, days: 0 };
+      }
+      types[type].count++;
+      types[type].days += leave.numberOfDays || 0;
+    });
+
+    return Object.keys(types).map(type => ({
+      type,
+      count: types[type].count,
+      days: types[type].days,
+    }));
+  }
+
+  private async getLeaveByDepartment(tenantId: string, dateRange: DateRange, leaves: any[]): Promise<any[]> {
+    const departments = [...new Set(leaves.map(l => l.department))];
+    
+    return departments.map(dept => {
+      const deptLeaves = leaves.filter(l => l.department === dept);
+      const totalDays = deptLeaves.reduce((sum, l) => sum + (l.numberOfDays || 0), 0);
+      const avgDays = deptLeaves.length > 0 ? totalDays / deptLeaves.length : 0;
+
+      return {
+        department: dept,
+        requests: deptLeaves.length,
+        avgDays: Math.round(avgDays * 10) / 10,
+      };
+    });
+  }
+
+  private async getLeaveByMonth(tenantId: string, leaves: any[]): Promise<any[]> {
+    const months: any = {};
+    leaves.forEach(leave => {
+      const month = new Date(leave.startDate).toLocaleString('default', { month: 'long' });
+      months[month] = (months[month] || 0) + 1;
+    });
+
+    return Object.keys(months)
+      .map(month => ({ month, count: months[month] }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+  }
+
+  private calculateWorkDays(dateRange: DateRange): number {
+    let workDays = 0;
+    const current = new Date(dateRange.start);
+    
+    while (current <= dateRange.end) {
+      const day = current.getDay();
+      if (day !== 0 && day !== 6) { // Not Sunday or Saturday
+        workDays++;
+      }
+      current.setDate(current.getDate() + 1);
     }
+    
+    return workDays;
+  }
 
-    return trend;
+  private async generateTurnoverTrend(tenantId: string, dateRange: DateRange): Promise<any[]> {
+    // Would implement actual trend calculation
+    return [];
+  }
+
+  private async generateAttendanceTrend(tenantId: string, dateRange: DateRange): Promise<any[]> {
+    // Would implement actual trend calculation
+    return [];
+  }
+
+  private async generateLeaveTrend(tenantId: string, dateRange: DateRange): Promise<any[]> {
+    // Would implement actual trend calculation
+    return [];
   }
 }

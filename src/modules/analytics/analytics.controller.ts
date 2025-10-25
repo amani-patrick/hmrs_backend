@@ -1,6 +1,6 @@
 import { Controller, Get, Query, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { AnalyticsRealService } from './analytics-real.service';
+import { AnalyticsRealService } from './analytics.service';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto';
 
 @ApiTags('Analytics')

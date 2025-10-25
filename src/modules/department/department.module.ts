@@ -1,11 +1,14 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { TENANT_DATA_SOURCE } from '../../tenancy/tenancy.symbols';
-import { DepartmentService } from './department.service';
+import {  DepartmentRealService } from './department.service';
 import { DepartmentController } from './department.controller';
 import { Department } from './entities/department.entity';
+import { UsersModule } from '../users/users.module';
+import { Position } from '../position/entities/position.entity';
 
 @Module({
+  imports: [forwardRef(() => UsersModule)],
   controllers: [DepartmentController],
   providers: [
     {
@@ -16,9 +19,17 @@ import { Department } from './entities/department.entity';
       },
       inject: [TENANT_DATA_SOURCE],
     },
-    DepartmentService,
+    {
+      provide: 'POSITION_REPOSITORY',
+      useFactory: (tenantDataSource: DataSource) => {
+        if (!tenantDataSource) return null;
+        return tenantDataSource.getRepository(Position);
+      },
+      inject: [TENANT_DATA_SOURCE],
+    },
+    DepartmentRealService,
   ],
-  exports: [DepartmentService]
+  exports: [DepartmentRealService]
 })
 
 export class DepartmentModule {}

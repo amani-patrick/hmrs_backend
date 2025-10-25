@@ -8,6 +8,6 @@ import { trainingProviders } from './training.providers';
   imports: [DatabaseModule],
   controllers: [TrainingController],
   providers: [TrainingService, ...trainingProviders],
-  exports: [TrainingService],
+  exports: [TrainingService, 'ENROLLMENT_REPOSITORY'],
 })
 export class TrainingModule {}

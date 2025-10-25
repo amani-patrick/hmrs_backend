@@ -1,199 +1,546 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { Repository, Between, MoreThanOrEqual, LessThanOrEqual, In } from 'typeorm';
+import { User } from '../users/entities/user.entity';
+import { LeaveRequest, LeaveStatus } from '../leave/entities/leave-request.entity';
+import { AttendanceRecord, AttendanceStatus } from '../attendance/entities/attendance-record.entity';
+import { PerformanceReview, ReviewStatus } from '../performance/entities/performance-review.entity';
+import { Goal, GoalStatus } from '../performance/entities/goal.entity';
+import { Enrollment, EnrollmentStatus } from '../training/entities/enrollment.entity';
 
 @Injectable()
-export class ManagerDashboardService {
+export class ManagerDashboardRealService {
+  constructor(
+    @Inject('USER_REPOSITORY')
+    private readonly userRepository: Repository<User>,
+    @Inject('LEAVE_REQUEST_REPOSITORY')
+    private readonly leaveRepository: Repository<LeaveRequest>,
+    @Inject('ATTENDANCE_RECORD_REPOSITORY')
+    private readonly attendanceRepository: Repository<AttendanceRecord>,
+    @Inject('PERFORMANCE_REVIEW_REPOSITORY')
+    private readonly reviewRepository: Repository<PerformanceReview>,
+    @Inject('GOAL_REPOSITORY')
+    private readonly goalRepository: Repository<Goal>,
+    @Inject('ENROLLMENT_REPOSITORY')
+    private readonly enrollmentRepository: Repository<Enrollment>,
+  ) {}
+
   // ==================== TEAM OVERVIEW ====================
 
   async getTeamOverview(tenantId: string, managerId: string) {
-    // Mock data - would integrate with actual repositories
+    const teamMembers = await this.userRepository.find({
+      where: { tenantId, managerId, isActive: true },
+      relations: ['department', 'positionRef'],
+    });
+
+    const onLeave = await this.leaveRepository.count({
+      where: {
+        tenantId,
+        employeeId: In(teamMembers.map(m => m.id)),
+        status: LeaveStatus.APPROVED,
+        startDate: LessThanOrEqual(new Date()),
+        endDate: MoreThanOrEqual(new Date()),
+      },
+    });
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const newHires = await this.userRepository.count({
+      where: {
+        tenantId,
+        joinedAt: MoreThanOrEqual(thirtyDaysAgo),
+      },
+    });
+
+    const probationPeriod = teamMembers.filter(m => {
+      if (!m.joinedAt) return false;
+      const daysSinceHire = Math.floor((new Date().getTime() - new Date(m.joinedAt).getTime()) / (1000 * 60 * 60 * 24));
+      return daysSinceHire < 90;
+    }).length;
+
+    const departmentBreakdown = teamMembers.reduce((acc, member) => {
+      const deptName = member.department?.name || 'Unassigned';
+      const existing = acc.find(d => d.department === deptName);
+      if (existing) {
+        existing.count++;
+      } else {
+        acc.push({ department: deptName, count: 1 });
+      }
+      return acc;
+    }, [] as Array<{ department: string; count: number }>);
+
+    const recentJoiners = teamMembers
+      .filter(m => m.joinedAt)
+      .sort((a, b) => new Date(b.joinedAt!).getTime() - new Date(a.joinedAt!).getTime())
+      .slice(0, 5)
+      .map(m => ({
+        id: m.id,
+        name: `${m.firstName} ${m.lastName}`,
+        position: m.positionRef?.title || m.position || 'N/A',
+        joinDate: m.joinedAt,
+      }));
+
     return {
-      teamSize: 12,
-      activeMembers: 11,
-      onLeave: 1,
-      newHires: 2,
-      probationPeriod: 1,
-      departmentBreakdown: [
-        { department: 'Engineering', count: 8 },
-        { department: 'Design', count: 4 },
-      ],
-      recentJoiners: [
-        { id: '1', name: 'John Doe', position: 'Developer', joinDate: '2025-10-15' },
-        { id: '2', name: 'Jane Smith', position: 'Designer', joinDate: '2025-10-10' },
-      ],
+      teamSize: teamMembers.length,
+      activeMembers: teamMembers.length - onLeave,
+      onLeave,
+      newHires,
+      probationPeriod,
+      departmentBreakdown,
+      recentJoiners,
     };
   }
 
   // ==================== QUICK ACTIONS ====================
 
   async getPendingActions(tenantId: string, managerId: string) {
+    const teamMembers = await this.userRepository.find({
+      where: { tenantId, managerId, isActive: true },
+      select: ['id'],
+    });
+    const teamMemberIds = teamMembers.map(m => m.id);
+
+    const pendingLeaveRequests = await this.leaveRepository.count({
+      where: { tenantId, employeeId: In(teamMemberIds), status: LeaveStatus.PENDING },
+    });
+
+    const upcomingReviews = await this.reviewRepository.count({
+      where: {
+        tenantId,
+        employeeId: In(teamMemberIds),
+        status: ReviewStatus.IN_PROGRESS,
+        dueDate: MoreThanOrEqual(new Date()),
+      },
+    });
+
+    const overdueGoals = await this.goalRepository.count({
+      where: {
+        tenantId,
+        ownerId: In(teamMemberIds),
+        status: GoalStatus.ACTIVE,
+        dueDate: LessThanOrEqual(new Date()),
+      },
+    });
+
+    const trainingApprovals = await this.enrollmentRepository.count({
+      where: {
+        tenantId,
+        learnerId: In(teamMemberIds),
+        status: EnrollmentStatus.ENROLLED,
+      },
+    });
+
+    const total = pendingLeaveRequests + upcomingReviews + overdueGoals + trainingApprovals;
+
     return {
-      pendingLeaveRequests: 3,
-      pendingTimeoffs: 2,
-      pendingReimbursements: 1,
-      upcomingReviews: 4,
-      overdueGoals: 2,
-      trainingApprovals: 1,
-      total: 13,
+      pendingLeaveRequests,
+      pendingTimeoffs: 0, // TODO: Add timeoff entity
+      pendingReimbursements: 0, // TODO: Add reimbursement entity
+      upcomingReviews,
+      overdueGoals,
+      trainingApprovals,
+      total,
     };
   }
 
-  async getLeaveRequests(tenantId: string, managerId: string) {
-    // Mock data
-    return [
-      {
-        id: '1',
-        employeeName: 'John Doe',
-        leaveType: 'Annual Leave',
-        startDate: '2025-11-05',
-        endDate: '2025-11-07',
-        days: 3,
-        status: 'pending',
-        reason: 'Family vacation',
-      },
-      {
-        id: '2',
-        employeeName: 'Jane Smith',
-        leaveType: 'Sick Leave',
-        startDate: '2025-10-25',
-        endDate: '2025-10-25',
-        days: 1,
-        status: 'pending',
-        reason: 'Medical appointment',
-      },
-    ];
-  }
+  // ==================== TIME-OFF REQUESTS ====================
 
   async getTimeoffRequests(tenantId: string, managerId: string) {
-    return [
-      {
-        id: '1',
-        employeeName: 'Bob Johnson',
-        date: '2025-10-30',
-        hours: 4,
-        reason: 'Personal appointment',
-        status: 'pending',
+    // Get team members
+    const teamMembers = await this.userRepository.find({
+      where: { tenantId, managerId, isActive: true },
+      select: ['id'],
+    });
+
+    if (teamMembers.length === 0) {
+      return [];
+    }
+
+    const teamMemberIds = teamMembers.map(member => member.id);
+
+    // Get pending time-off requests for team members
+    const timeoffRequests = await this.leaveRepository.find({
+      where: {
+        tenantId,
+        employeeId: In(teamMemberIds),
+        status: LeaveStatus.PENDING,
       },
+      relations: ['employee'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return timeoffRequests.map(request => ({
+      id: request.id,
+      type: typeof request.leaveType === 'string' ? request.leaveType : 'N/A',
+      startDate: request.startDate,
+      endDate: request.endDate,
+      status: request.status,
+      reason: request.reason,
+      employee: {
+        id: request.employee.id,
+        name: `${request.employee.firstName} ${request.employee.lastName}`,
+        avatar: request.employee.profilePictureUrl,
+      },
+      submittedAt: request.createdAt,
+    }));
+  }
+
+  // ==================== LEAVE REQUESTS ====================
+
+  async getLeaveRequests(tenantId: string, managerId: string) {
+    const teamMembers = await this.userRepository.find({
+      where: { tenantId, managerId, isActive: true },
+      select: ['id'],
+    });
+
+    const requests = await this.leaveRepository.find({
+      where: {
+        tenantId,
+        employeeId: In(teamMembers.map(m => m.id)),
+        status: LeaveStatus.PENDING,
+      },
+      relations: ['employee', 'leaveType'],
+      order: { createdAt: 'DESC' },
+      take: 20,
+    });
+
+    return requests.map(req => ({
+      id: req.id,
+      employeeName: `${req.employee.firstName} ${req.employee.lastName}`,
+      leaveType: typeof req.leaveType === 'string' ? req.leaveType : 'N/A',
+      startDate: req.startDate,
+      endDate: req.endDate,
+      days: req.daysRequested,
+      status: req.status,
+      reason: req.reason,
+    }));
+  }
+
+  // ==================== TEAM CALENDAR ====================
+
+  async getTeamCalendar(tenantId: string, managerId: string, startDate: string, endDate: string) {
+    // Get team members
+    const teamMembers = await this.userRepository.find({
+      where: { tenantId, managerId, isActive: true },
+      select: ['id', 'firstName', 'lastName', 'profilePictureUrl'],
+    });
+
+    if (teamMembers.length === 0) {
+      return [];
+    }
+
+    const teamMemberIds = teamMembers.map(member => member.id);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Get leave requests for team members within date range
+    const leaveRequests = await this.leaveRepository.find({
+      where: {
+        tenantId,
+        employeeId: In(teamMemberIds),
+        startDate: Between(start, end),
+        status: In(['APPROVED', 'PENDING']),
+      },
+      relations: ['employee'],
+    });
+
+    // Get attendance records for team members within date range
+    const attendanceRecords = await this.attendanceRepository.find({
+      where: {
+        tenantId,
+        employeeId: In(teamMemberIds),
+        date: Between(start, end),
+      },
+    });
+
+    // Format the data for the calendar
+    const events = [
+      ...leaveRequests.map(request => ({
+        id: `leave-${request.id}`,
+        type: 'leave',
+        title: `${request.employee.firstName} ${request.employee.lastName} - ${typeof request.leaveType === 'string' ? request.leaveType : 'Leave'}`,
+        start: request.startDate,
+        end: request.endDate,
+        status: request.status,
+        userId: request.employeeId,
+        userName: `${request.employee.firstName} ${request.employee.lastName}`,
+        userAvatar: request.employee.profilePictureUrl,
+      })),
+      ...attendanceRecords.map(record => {
+        const employee = teamMembers.find(m => m.id === record.employeeId);
+        return {
+          id: `attendance-${record.id}`,
+          type: 'attendance',
+          title: `${employee?.firstName || 'Unknown'} ${employee?.lastName || ''} - ${record.status}`,
+          start: new Date(record.date),
+          end: new Date(record.date),
+          status: record.status,
+          checkIn: record.checkInTime,
+          checkOut: record.checkOutTime,
+          userId: record.employeeId,
+          userName: `${employee?.firstName || 'Unknown'} ${employee?.lastName || ''}`,
+          userAvatar: employee?.profilePictureUrl,
+        };
+      }),
     ];
+
+    return events;
   }
 
   // ==================== TEAM PERFORMANCE ====================
 
   async getTeamPerformance(tenantId: string, managerId: string) {
+    const teamMembers = await this.userRepository.find({
+      where: { tenantId, managerId, isActive: true },
+    });
+    const teamMemberIds = teamMembers.map(m => m.id);
+
+    const reviews = await this.reviewRepository.find({
+      where: {
+        tenantId,
+        employeeId: In(teamMemberIds),
+        status: ReviewStatus.COMPLETED,
+      },
+      relations: ['employee'],
+    });
+
+    const averageRating = reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + (typeof r.overallRating === 'number' ? r.overallRating : 0), 0) / reviews.length
+      : 0;
+
+    const goals = await this.goalRepository.find({
+      where: { tenantId, ownerId: In(teamMemberIds) },
+    });
+
+    const goalsCompleted = goals.filter(g => g.status === GoalStatus.COMPLETED).length;
+    const goalsTotal = goals.length;
+    const completionRate = goalsTotal > 0 ? (goalsCompleted / goalsTotal) * 100 : 0;
+
+    const performanceByMember = teamMembers.map(member => {
+      const memberReviews = reviews.filter(r => r.employeeId === member.id);
+      const memberGoals = goals.filter(g => g.ownerId === member.id);
+      const avgRating = memberReviews.length > 0
+        ? memberReviews.reduce((sum, r) => sum + (typeof r.overallRating === 'number' ? r.overallRating : 0), 0) / memberReviews.length
+        : 0;
+      const completedGoals = memberGoals.filter(g => g.status === GoalStatus.COMPLETED).length;
+
+      return {
+        id: member.id,
+        name: `${member.firstName} ${member.lastName}`,
+        rating: avgRating,
+        goalsCompleted: completedGoals,
+        overdueGoals: memberGoals.filter(g => g.status === GoalStatus.ACTIVE && g.dueDate && new Date(g.dueDate) < new Date()).length,
+      };
+    });
+
+    const topPerformers = performanceByMember
+      .filter(p => p.rating > 0)
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 3);
+
+    const needsAttention = performanceByMember
+      .filter(p => p.rating > 0 && p.rating < 3.5 || p.overdueGoals > 2)
+      .slice(0, 5);
+
     return {
-      averageRating: 4.2,
-      goalsCompleted: 78,
-      goalsTotal: 100,
-      completionRate: 78,
-      topPerformers: [
-        { id: '1', name: 'Alice Brown', rating: 4.8, goalsCompleted: 15 },
-        { id: '2', name: 'Charlie Davis', rating: 4.6, goalsCompleted: 14 },
-        { id: '3', name: 'Diana Evans', rating: 4.5, goalsCompleted: 13 },
-      ],
-      needsAttention: [
-        { id: '4', name: 'Frank Green', rating: 3.2, overdueGoals: 3 },
-      ],
+      averageRating: Math.round(averageRating * 10) / 10,
+      goalsCompleted,
+      goalsTotal,
+      completionRate: Math.round(completionRate),
+      topPerformers,
+      needsAttention,
     };
   }
 
-  async getTeamGoals(tenantId: string, managerId: string) {
+//getTeamAttendanceSummary
+  async getTeamAttendanceSummary(tenantId: string, managerId: string, month: string) {
+    const teamMembers = await this.userRepository.find({
+      where: { tenantId, managerId, isActive: true },
+    });
+    const teamMemberIds = teamMembers.map(m => m.id);
+
+    const attendance = await this.attendanceRepository.find({
+      where: {
+        tenantId,
+        employeeId: In(teamMemberIds),
+        date: MoreThanOrEqual(new Date(month)),
+      },
+      relations: ['employee'],
+    });
+
+    const total = attendance.length;
+    const present = attendance.filter(a => a.status === AttendanceStatus.PRESENT).length;
+    const absent = attendance.filter(a => a.status === AttendanceStatus.ABSENT).length;
+    const late = attendance.filter(a => a.status === AttendanceStatus.LATE).length;
+    const onLeave = attendance.filter(a => a.status === AttendanceStatus.ON_LEAVE).length;
+
     return {
-      total: 100,
-      completed: 78,
-      inProgress: 18,
-      notStarted: 4,
-      overdue: 2,
-      byMember: [
-        { memberId: '1', memberName: 'Alice Brown', total: 10, completed: 9 },
-        { memberId: '2', memberName: 'Bob Johnson', total: 8, completed: 6 },
-      ],
+      total,
+      present,
+      absent,
+      late,
+      onLeave,
+    };
+  }
+
+
+  async getTeamGoals(tenantId: string, managerId: string) {
+    const teamMembers = await this.userRepository.find({
+      where: { tenantId, managerId, isActive: true },
+    });
+
+    const goals = await this.goalRepository.find({
+      where: {
+        tenantId,
+        ownerId: In(teamMembers.map(m => m.id)),
+      },
+      relations: ['owner'],
+    });
+
+    const total = goals.length;
+    const completed = goals.filter(g => g.status === GoalStatus.COMPLETED).length;
+    const inProgress = goals.filter(g => g.status === GoalStatus.ACTIVE || g.status === GoalStatus.ON_TRACK).length;
+    const notStarted = goals.filter(g => g.status === GoalStatus.DRAFT).length;
+    const overdue = goals.filter(g => 
+      (g.status === GoalStatus.ACTIVE || g.status === GoalStatus.BEHIND) && 
+      g.dueDate && 
+      new Date(g.dueDate) < new Date()
+    ).length;
+
+    const byMember = teamMembers.map(member => {
+      const memberGoals = goals.filter(g => g.ownerId === member.id);
+      return {
+        memberId: member.id,
+        memberName: `${member.firstName} ${member.lastName}`,
+        total: memberGoals.length,
+        completed: memberGoals.filter(g => g.status === GoalStatus.COMPLETED).length,
+      };
+    });
+
+    return {
+      total,
+      completed,
+      inProgress,
+      notStarted,
+      overdue,
+      byMember,
     };
   }
 
   // ==================== TEAM ATTENDANCE ====================
 
   async getTeamAttendance(tenantId: string, managerId: string, date?: string) {
+    const targetDate = date ? new Date(date) : new Date();
+    const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+
+    const teamMembers = await this.userRepository.find({
+      where: { tenantId, managerId, isActive: true },
+    });
+
+    const attendance = await this.attendanceRepository.find({
+      where: {
+        tenantId,
+        employeeId: In(teamMembers.map(m => m.id)),
+        date: Between(startOfDay, endOfDay),
+      },
+      relations: ['employee'],
+    });
+
+    const onLeave = await this.leaveRepository.count({
+      where: {
+        tenantId,
+        employeeId: In(teamMembers.map(m => m.id)),
+        status: LeaveStatus.APPROVED,
+        startDate: LessThanOrEqual(targetDate),
+        endDate: MoreThanOrEqual(targetDate),
+      },
+    });
+
+    const present = attendance.filter(a => a.status === 'present').length;
+    const late = attendance.filter(a => a.status === 'late').length;
+    const workFromHome = attendance.filter(a => a.checkInLocation?.includes('remote') || a.checkInLocation?.includes('home')).length;
+    const absent = teamMembers.length - attendance.length - onLeave;
+
+    const members = teamMembers.map(member => {
+      const record = attendance.find(a => a.employeeId === member.id);
+      const isOnLeave = onLeave > 0; // Simplified - should check specific member
+
+      return {
+        id: member.id,
+        name: `${member.firstName} ${member.lastName}`,
+        status: isOnLeave ? 'on_leave' : (record?.status || 'absent'),
+        checkIn: record?.checkInTime || null,
+        checkOut: record?.checkOutTime || null,
+      };
+    });
+
     return {
-      date: date || new Date().toISOString().split('T')[0],
-      present: 10,
-      absent: 1,
-      onLeave: 1,
-      late: 2,
-      workFromHome: 3,
-      members: [
-        { id: '1', name: 'John Doe', status: 'present', checkIn: '09:00', checkOut: null },
-        { id: '2', name: 'Jane Smith', status: 'late', checkIn: '09:45', checkOut: null },
-        { id: '3', name: 'Bob Johnson', status: 'on_leave', checkIn: null, checkOut: null },
-      ],
+      date: startOfDay.toISOString().split('T')[0],
+      present,
+      absent,
+      onLeave,
+      late,
+      workFromHome,
+      members,
     };
   }
-
-  async getTeamAttendanceSummary(tenantId: string, managerId: string, month: string) {
-    return {
-      month,
-      averageAttendanceRate: 96.5,
-      totalWorkDays: 22,
-      totalAbsences: 12,
-      lateArrivals: 8,
-      overtimeHours: 45,
-      byMember: [
-        { memberId: '1', memberName: 'John Doe', attendanceRate: 98, absences: 0, lateCount: 1 },
-        { memberId: '2', memberName: 'Jane Smith', attendanceRate: 95, absences: 1, lateCount: 2 },
-      ],
-    };
-  }
-
-  // ==================== TEAM CALENDAR ====================
-
-  async getTeamCalendar(tenantId: string, managerId: string, startDate: string, endDate: string) {
-    return {
-      period: { startDate, endDate },
-      upcomingLeaves: [
-        { memberId: '1', memberName: 'John Doe', startDate: '2025-11-05', endDate: '2025-11-07', type: 'Annual Leave' },
-        { memberId: '2', memberName: 'Jane Smith', startDate: '2025-11-10', endDate: '2025-11-12', type: 'Personal Leave' },
-      ],
-      teamEvents: [
-        { id: '1', title: 'Team Meeting', date: '2025-10-25', time: '10:00', attendees: 12 },
-        { id: '2', title: 'Sprint Planning', date: '2025-10-28', time: '14:00', attendees: 8 },
-      ],
-      birthdays: [
-        { memberId: '3', memberName: 'Bob Johnson', date: '2025-10-30' },
-      ],
-      anniversaries: [
-        { memberId: '4', memberName: 'Alice Brown', date: '2025-11-01', years: 3 },
-      ],
-    };
-  }
-
-  // ==================== TEAM TRAINING ====================
-
-  async getTeamTraining(tenantId: string, managerId: string) {
-    return {
-      activePrograms: 5,
-      totalEnrollments: 18,
-      completedCourses: 12,
-      averageProgress: 67,
-      upcomingDeadlines: [
-        { memberId: '1', memberName: 'John Doe', courseName: 'Advanced React', deadline: '2025-11-15', progress: 80 },
-        { memberId: '2', memberName: 'Jane Smith', courseName: 'Leadership 101', deadline: '2025-11-20', progress: 45 },
-      ],
-      pendingApprovals: [
-        { memberId: '3', memberName: 'Bob Johnson', courseName: 'AWS Certification Prep', requestedDate: '2025-10-18' },
-      ],
-    };
-  }
-
-  // ==================== QUICK STATS ====================
 
   async getQuickStats(tenantId: string, managerId: string) {
+    const overview = await this.getTeamOverview(tenantId, managerId);
+    const actions = await this.getPendingActions(tenantId, managerId);
+    const performance = await this.getTeamPerformance(tenantId, managerId);
+    const attendance = await this.getTeamAttendance(tenantId, managerId);
+
     return {
-      teamSize: 12,
-      presentToday: 10,
-      onLeaveToday: 1,
-      pendingApprovals: 6,
-      overdueGoals: 2,
-      upcomingReviews: 4,
-      avgTeamRating: 4.2,
-      teamAttendanceRate: 96.5,
+      teamSize: overview.teamSize,
+      presentToday: attendance.present,
+      onLeaveToday: attendance.onLeave,
+      pendingApprovals: actions.pendingLeaveRequests,
+      overdueGoals: actions.overdueGoals,
+      upcomingReviews: actions.upcomingReviews,
+      avgTeamRating: performance.averageRating,
+      teamAttendanceRate: attendance.present > 0 ? (attendance.present / overview.teamSize) * 100 : 0,
+    };
+  }
+
+  //getTeamTraining
+  async getTeamTraining(tenantId: string, managerId: string) {
+    const teamMembers = await this.userRepository.find({
+      where: { tenantId, managerId, isActive: true },
+    });
+    const teamMemberIds = teamMembers.map(m => m.id);
+
+    const training = await this.enrollmentRepository.find({
+      where: {
+        tenantId,
+        learnerId: In(teamMemberIds),
+        status: EnrollmentStatus.ENROLLED,
+      },
+      relations: ['learner'],
+    });
+
+    const total = training.length;
+    const completed = training.filter(t => t.status === EnrollmentStatus.COMPLETED).length;
+    const inProgress = training.filter(t => t.status === EnrollmentStatus.ENROLLED).length;
+    const notStarted = training.filter(t => t.status === EnrollmentStatus.ENROLLED).length;
+
+    const byMember = teamMembers.map(member => {
+      const memberTraining = training.filter(t => t.learnerId === member.id);
+      return {
+        memberId: member.id,
+        memberName: `${member.firstName} ${member.lastName}`,
+        total: memberTraining.length,
+        completed: memberTraining.filter(t => t.status === EnrollmentStatus.COMPLETED).length,
+      };
+    });
+
+    return {
+      total,
+      completed,
+      inProgress,
+      notStarted,
+      byMember,
     };
   }
 }

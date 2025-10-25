@@ -7,6 +7,9 @@ export class Position {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'uuid' })
+  tenantId: string;
+
   @Column({ unique: true })
   title: string;
 

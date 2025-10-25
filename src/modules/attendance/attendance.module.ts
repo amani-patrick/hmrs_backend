@@ -8,6 +8,6 @@ import { attendanceProviders } from './attendance.providers';
   imports: [DatabaseModule],
   providers: [AttendanceService, ...attendanceProviders],
   controllers: [AttendanceController],
-  exports: [AttendanceService],
+  exports: [AttendanceService, 'ATTENDANCE_RECORD_REPOSITORY'],
 })
 export class AttendanceModule {}

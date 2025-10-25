@@ -1,12 +1,12 @@
 import { Controller, Get, Query, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { ManagerDashboardService } from './manager-dashboard.service';
+import { ManagerDashboardRealService } from './manager-dashboard.service';
 
 @ApiTags('Manager Dashboard')
 @ApiBearerAuth()
 @Controller('manager-dashboard')
 export class ManagerDashboardController {
-  constructor(private readonly managerDashboardService: ManagerDashboardService) {}
+  constructor(private readonly managerDashboardService: ManagerDashboardRealService) {}
 
   // ==================== OVERVIEW ====================
 
